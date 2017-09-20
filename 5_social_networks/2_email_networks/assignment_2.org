@@ -79,7 +79,6 @@ networkx.draw_networkx(one)
 #+RESULTS:
 [[file:/tmp/one.png]]
 
-
 * Number of employees and emails
 
 How many employees and emails are represented in the graph from Question 1?
@@ -97,8 +96,14 @@ def answer_two():
     return (one.order(), one.size())
 #+END_SRC
 
-* Information Routes
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_two())
+#+END_SRC
 
+#+RESULTS:
+: (167, 82927)
+
+* Information Routes
 ** Part 1. Assume that information in this company can only be exchanged through email.
    When an employee sends an email to another employee, a communication channel has been created, allowing the sender to provide information to the receiver, but not vice versa. 
 
@@ -125,8 +130,8 @@ def answer_three():
     """
     emails = answer_one()
     nodes = emails.nodes()
-    node_count = len(nodes)
-    fully_connected = all((len(emails.neighbors(node)) == node_count for node in nodes))
+    other_nodes = len(nodes) - 1
+    fully_connected = all((len(emails.neighbors(node)) == other_nodes for node in nodes))
     undirected = emails.to_undirected()
     all_connected = True
     for left_node in nodes:
@@ -139,6 +144,13 @@ def answer_three():
     return fully_connected, all_connected
 #+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_three())
+#+END_SRC
+
+#+RESULTS:
+: (False, False)
+
 * Largest Weakly Connected Component
 
 How many nodes are in the largest (in terms of nodes) weakly connected component?
@@ -148,10 +160,21 @@ How many nodes are in the largest (in terms of nodes) weakly connected component
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_four():
     """Count of nodes in the largest weakly connected component"""
-    
-    
-    return # Your Answer Here
+    one = answer_one()
+    return len(max(networkx.weakly_connected_component_subgraphs(one), key=len).nodes())
 #+END_SRC
+
+According to [[https://en.wikipedia.org/wiki/Connectivity_%28graph_theory%29#Definitions_of_components.2C_cuts_and_connectivity][Wikipedia]], a directed graph is weakly connected if replacing every directed edge with an undirected one creates a connected graph, so if the undirected graph in the next section is a connected graph, then the entire email graph is weakly connected.
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_four())
+undirected = one.to_undirected()
+print(networkx.is_connected(undirected))
+#+END_SRC
+
+#+RESULTS:
+: 167
+: True
 
 # ### Question 5
 # 
