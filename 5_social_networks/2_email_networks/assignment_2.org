@@ -1,0 +1,342 @@
+#+TITLE: Network Connectivity
+
+This will go through the process of importing and analyzing an internal email communication network between employees of a mid-sized manufacturing company. 
+Each node represents an employee and each directed edge between two nodes represents an individual email. The left node represents the sender and the right node represents the recipient.
+
+#+BEGIN_SRC ditaa :file /tmp/employee_to_employee.png :cmdline r
++------+      +--------+
+|Sender| -->  |Receiver|
++------+      +--------+
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/employee_to_employee.png]]
+
+* Tangle
+  This is for troubleshooting.
+
+#+BEGIN_SRC python :tangle assignment1.py
+<<imports>>
+
+<<data>>
+
+<<answer-one>>
+#+END_SRC
+* Imports
+#+BEGIN_SRC ipython :session networkconnectivity :results none :noweb-ref imports
+import networkx
+import pandas
+import seaborn
+#+END_SRC
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
+% matplotlib inline
+seaborn.set_style("whitegrid")
+#+END_SRC
+
+This line must be commented out when submitting to the autograder
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output :noweb-ref data
+email_network = pandas.read_table('email_network.txt', dtype={"#Sender": str, "Recipient": str})
+print(email_network.head())
+#+END_SRC
+
+#+RESULTS:
+:   #Sender Recipient        time
+: 0       1         2  1262454010
+: 1       1         3  1262454010
+: 2       1         4  1262454010
+: 3       1         5  1262454010
+: 4       1         6  1262454010
+
+* 1 - Load the Directed Multigraph
+
+Using networkx, load up the directed multigraph from `email_network.txt`. Make sure the node names are strings.
+
+*This function should return a directed multigraph networkx graph.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none :noweb-ref answer-one
+def answer_one():
+    """Loads the email-network graph
+
+    Returns:
+     networkx.MultiDiGraph: the graph of the email network
+    """
+    # there's a bug in networkx loading MultiDiGraphs from pandas data-frames
+    # so this is a work-around
+    graph = networkx.MultiDiGraph()
+    tuples = [(sender, recipient, {"time": time})
+              for (sender, recipient, time) in email_network.values]
+    graph.add_edges_from(tuples)
+    return graph
+#+END_SRC
+
+#+BEGIN_SRC ipython :session networkconnectivity :file /tmp/one.png
+one = answer_one()
+networkx.draw_networkx(one)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/one.png]]
+
+* Number of employees and emails
+
+How many employees and emails are represented in the graph from Question 1?
+
+*This function should return a tuple (#employees, #emails).*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
+def answer_two():
+    """Counts the number of employees and emails
+
+    Returns:
+     tuple: count of employees, count of emails
+    """
+    one = answer_one()
+    return (one.order(), one.size())
+#+END_SRC
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_two())
+#+END_SRC
+
+#+RESULTS:
+: (167, 82927)
+
+* Information Routes
+** Part 1. Assume that information in this company can only be exchanged through email.
+   When an employee sends an email to another employee, a communication channel has been created, allowing the sender to provide information to the receiver, but not vice versa. 
+
+   Based on the emails sent in the data, is it possible for information to go from every employee to every other employee?
+
+** Part 2. Now assume that a communication channel established by an email allows information to be exchanged both ways. 
+
+   Based on the emails sent in the data, is it possible for information to go from every employee to every other employee?
+
+*This function should return a tuple of bools (part1, part2).*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
+def answer_three():
+    """decides connectivity based on emails
+
+    First: Assume communication is not necessarily allowed both ways - 
+    based on data, can every employee contact each other?
+
+    Second: Assume any contact means there's two way communication. 
+    Can every employee be contacted?
+
+    Returns:
+     tuple: (every employee contacted every other employee, every employee contacted once)
+    """
+    emails = answer_one()
+    nodes = emails.nodes()
+    other_nodes = len(nodes) - 1
+    fully_connected = all((len(emails.neighbors(node)) == other_nodes for node in nodes))
+    undirected = emails.to_undirected()
+    all_connected = True
+    for left_node in nodes:
+        for right_node in nodes:
+            if left_node != right_node and not undirected.has_edge(left_node, right_node):
+                all_connected = False
+                break
+        if not all_connected:
+            break
+    return fully_connected, all_connected
+#+END_SRC
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_three())
+#+END_SRC
+
+#+RESULTS:
+: (False, False)
+
+* Largest Weakly Connected Component
+
+How many nodes are in the largest (in terms of nodes) weakly connected component?
+
+*This function should return an int.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
+def answer_four():
+    """Count of nodes in the largest weakly connected component"""
+    one = answer_one()
+    return len(max(networkx.weakly_connected_component_subgraphs(one), key=len).nodes())
+#+END_SRC
+
+According to [[https://en.wikipedia.org/wiki/Connectivity_%28graph_theory%29#Definitions_of_components.2C_cuts_and_connectivity][Wikipedia]], a directed graph is weakly connected if replacing every directed edge with an undirected one creates a connected graph, so if the undirected graph in the next section is a connected graph, then the entire email graph is weakly connected.
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_four())
+undirected = one.to_undirected()
+print(networkx.is_connected(undirected))
+#+END_SRC
+
+#+RESULTS:
+: 167
+: True
+
+# ### Question 5
+# 
+# How many nodes are in the largest (in terms of nodes) strongly connected component?
+# 
+# *This function should return an int*
+
+# In[ ]:
+
+
+def answer_five():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 6
+# 
+# Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
+# Call this graph G_sc.
+# 
+# *This function should return a networkx MultiDiGraph named G_sc.*
+
+# In[ ]:
+
+
+def answer_six():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 7
+# 
+# What is the average distance between nodes in G_sc?
+# 
+# *This function should return a float.*
+
+# In[ ]:
+
+
+def answer_seven():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 8
+# 
+# What is the largest possible distance between two employees in G_sc?
+# 
+# *This function should return an int.*
+
+# In[ ]:
+
+
+def answer_eight():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 9
+# 
+# What is the set of nodes in G_sc with eccentricity equal to the diameter?
+# 
+# *This function should return a set of the node(s).*
+
+# In[ ]:
+
+
+def answer_nine():
+       
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 10
+# 
+# What is the set of node(s) in G_sc with eccentricity equal to the radius?
+# 
+# *This function should return a set of the node(s).*
+
+# In[ ]:
+
+
+def answer_ten():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 11
+# 
+# Which node in G_sc has the most shortest paths to other nodes whose distance equal the diameter of G_sc?
+# 
+# 
+# How many of these paths are there?
+# 
+# 
+# *This function should return a tuple (name of node, number of paths).*
+
+# In[ ]:
+
+
+def answer_eleven():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 12
+# 
+# Suppose you want to prevent communication from flowing to the node that you found in the previous question from any node in the center of G_sc, what is the smallest number of nodes you would need to remove from the graph (you're not allowed to remove the node from the previous question or the center nodes)? 
+# 
+# *This function should return an integer.*
+
+# In[ ]:
+
+
+def answer_twelve():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 13
+# 
+# Construct an undirected graph G_un using G_sc (you can ignore the attributes).
+# 
+# *This function should return a networkx Graph.*
+
+# In[ ]:
+
+
+def answer_thirteen():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
+
+# ### Question 14
+# 
+# What is the transitivity and average clustering coefficient of graph G_un?
+# 
+# *This function should return a tuple (transitivity, avg clustering).*
+
+# In[ ]:
+
+
+def answer_fourteen():
+        
+    # Your Code Here
+    
+    return # Your Answer Here
+
