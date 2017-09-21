@@ -42,6 +42,9 @@ from sklearn.metrics import accuracy_score
 import nltk
 import numpy
 import pandas
+pd = pandas
+np = numpy
+wn = wordnet
 #+END_SRC
 
 #+BEGIN_SRC ipython :session assignment4 :results none :noweb-ref lemmatizer
@@ -87,13 +90,14 @@ def doc_to_synsets(doc):
     synsets = []
     for (token, pos_tag) in tags:
         wordnet_tag = convert_tag(pos_tag)
-        if wordnet_tag is None:
-            continue
-        word = LEMMATIZER.lemmatize(token.lower(), wordnet_tag)
+        #if wordnet_tag is None:
+        #     continue
+        word = LEMMATIZER.lemmatize(token.lower())
         try:
-            synsets.append(wordnet.synset("{}.{}.01".format(word,
-                                                            wordnet_tag)))
-        except WordNetError:
+            # synsets.append(wordnet.synset("{}.{}.01".format(word,
+            #                                                 wordnet_tag)))
+            synsets.append(wordnet.synsets(token, wordnet_tag)[0])
+        except (WordNetError, IndexError):
             pass
     return synsets
 #+END_SRC
@@ -106,7 +110,7 @@ def similarity_score(s1, s2):
     Calculate the normalized similarity score of s1 onto s2
 
     For each synset in s1, finds the synset in s2 with the largest similarity value.
-    Sum of all of the largest similarity values and normalize this value by dividing it by the
+    Sum all of the largest similarity values and normalize this value by dividing it by the
     number of largest similarity values found.
 
     Args:
@@ -128,9 +132,9 @@ def similarity_score(s1, s2):
                         if similarity is not None)
         try:
             scores.append(max(similarities))
-        except ValueError:
+        except (ValueError, WordNetError):
             pass
-    return sum(scores)/len(scores)
+    return numpy.mean(scores)
 #+END_SRC
 
 ** Document Path Similarity
@@ -138,10 +142,8 @@ def similarity_score(s1, s2):
 #+BEGIN_SRC ipython :session assignment4 :results none :noweb-ref document-path-similarity
 def document_path_similarity(doc1, doc2):
     """Finds the symmetrical similarity between doc1 and doc2"""
-
     synsets1 = doc_to_synsets(doc1)
     synsets2 = doc_to_synsets(doc2)
-
     return (similarity_score(synsets1, synsets2) + similarity_score(synsets2, synsets1)) / 2
 #+END_SRC
 
@@ -192,6 +194,13 @@ paraphrases.head()
 3  Now the rest is just mechanical," said Allan H...  
 4  The card is issued by Mexico's consulates to i...  
 #+end_example
+
+#+BEGIN_SRC ipython :session assignment4 :results output
+print(paraphrases.shape)
+#+END_SRC
+
+#+RESULTS:
+: (20, 3)
 
 *** most_similar_docs
         
@@ -267,7 +276,7 @@ print(label_accuracy())
 #+END_SRC
 
 #+RESULTS:
-: 0.75
+: 0.8
 
 * Part 2 - Topic Modelling
 
@@ -298,7 +307,10 @@ Use CountVectorizor to find three letter tokens, remove stop_words, remove token
 #+BEGIN_SRC ipython :session assignment4 :results none
 vect = CountVectorizer(min_df=20, max_df=0.2, stop_words='english', 
                        token_pattern='(?u)\\b\\w\\w\\w+\\b')
+vect.fit(newsgroup_data)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session assignment4 :results none
 def data_to_corpus(data):
     """converts the data to a gensim corpus
 
@@ -306,7 +318,7 @@ def data_to_corpus(data):
      gensim.matutils.Sparse2Corpus: corpus for the data
     """
     # Fit and transform
-    X = vect.fit_transform(data)
+    X = vect.transform(data)
 
     # Convert sparse matrix to gensim corpus.
     return gensim.matutils.Sparse2Corpus(X, documents_columns=False)
@@ -357,7 +369,7 @@ print(lda_topics())
 
 ** topic_distribution
 
-For the new document =new_doc=, find the topic distribution. Remember to use =vect.transform= on the the new doc, and =Sparse2Corpus= to convert the sparse matrix to gensim corpus.
+For the new document =new_doc=, find the topic distribution. Remember to use =vect.transform= on the he new doc, and =Sparse2Corpus= to convert the sparse matrix to gensim corpus.
 
 *This function should return a list of tuples, where each tuple is `(#topic, probability)`*
 
@@ -372,8 +384,8 @@ def topic_distribution():
     Returns:
      List[Tuple]: list of topics with their probabilities
     """
-    corpus = data_to_corpus(new_doc)    
-    return corpus
+    corpus = data_to_corpus(new_doc)
+    return list(ldamodel.get_document_topics(corpus))[0]
 #+END_SRC
 
 #+BEGIN_SRC ipython :session assignment4 :results output
@@ -381,7 +393,7 @@ print(topic_distribution())
 #+END_SRC
 
 #+RESULTS:
-: <function topic_distribution at 0x7f75b831db70>
+: [(0, 0.020001831829864054), (1, 0.02000204822465949), (2, 0.02000000083212411), (3, 0.49631042031583561), (4, 0.020002764135450282), (5, 0.020002856012202509), (6, 0.020001696374813884), (7, 0.020001367510038583), (8, 0.020001848233010606), (9, 0.34367516653200092)]
 
 ** topic_names
 
@@ -405,8 +417,45 @@ Topics:
 
 #+BEGIN_SRC ipython :session assignment4 :results none
 def topic_names():
+    topics = ["Education",
+              "Electricity & Power",
+              "Computers & IT",
+              "Religion" ,
+              "Automobiles",
+              "Sports",
+              "Miscellany",
+              "use",
+              "Science", 
+              "PC"]
     
-    # Your Code Here
-    
-    return # Your Answer Here
+    return topics
 #+END_SRC
+
+* Submissions
+** Submission 1
+   - Function test_document_path_similarity was answered correctly, 0.4 points were awarded.
+   - Function lda_topics was answered correctly, 0.12 points were awarded.
+   - Function topic_names was answered correctly, 0.12 points were awarded.
+
+   - Function most_similar_docs was answered incorrectly, 0.12 points were not awarded.
+   - Function label_accuracy was answered incorrectly, 0.12 points were not awarded.
+   - Function topic_distribution was answered incorrectly, 0.12 points were not awarded.
+
+** Submission 3
+   - Function test_document_path_similarity was answered correctly, 0.4 points were awarded.
+   - Function most_similar_docs was answered correctly, 0.12 points were awarded.
+   - Function lda_topics was answered correctly, 0.12 points were awarded.
+   - Function topic_distribution was answered correctly, 0.12 points were awarded
+
+   - Function label_accuracy was answered incorrectly, 0.12 points were not awarded.
+   - Function topic_names was answered incorrectly, 0.12 points were not awarded
+     + Check that you solution returns a list of length 10!
+** Submission 4
+
+   - Function test_document_path_similarity was answered correctly, 0.4 points were awarded.
+   - Function most_similar_docs was answered correctly, 0.12 points were awarded.
+   - Function lda_topics was answered correctly, 0.12 points were awarded.
+   - Function topic_distribution was answered correctly, 0.12 points were awarded.
+   - Function topic_names was answered correctly, 0.12 points were awarded.
+
+   - Function label_accuracy was answered incorrectly, 0.12 points were not awarded.
