@@ -79,7 +79,7 @@ networkx.draw_networkx(one)
 #+RESULTS:
 [[file:/tmp/one.png]]
 
-* Number of employees and emails
+* 2 Number of employees and emails
 
 How many employees and emails are represented in the graph from Question 1?
 
@@ -103,7 +103,7 @@ print(answer_two())
 #+RESULTS:
 : (167, 82927)
 
-* Information Routes
+* 3 Information Routes
 ** Part 1. Assume that information in this company can only be exchanged through email.
    When an employee sends an email to another employee, a communication channel has been created, allowing the sender to provide information to the receiver, but not vice versa. 
 
@@ -151,7 +151,7 @@ print(answer_three())
 #+RESULTS:
 : (False, False)
 
-* Largest Weakly Connected Component
+* 4 Largest Weakly Connected Component
 
 How many nodes are in the largest (in terms of nodes) weakly connected component?
 
@@ -176,70 +176,82 @@ print(networkx.is_connected(undirected))
 : 167
 : True
 
-# ### Question 5
-# 
-# How many nodes are in the largest (in terms of nodes) strongly connected component?
-# 
-# *This function should return an int*
+* 5 Nodes in Largest Strongly Connected Component
+  How many nodes are in the largest (in terms of nodes) strongly connected component?
+  *This function should return an int*
 
-# In[ ]:
-
-
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_five():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """size of largest strongly connected component
 
+    Returns:
+     int: number of nodes in largest strongly connected component
+    """
+    return len(max(networkx.strongly_connected_components(one), key=len))
+#+END_SRC
 
-# ### Question 6
-# 
-# Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
-# Call this graph G_sc.
-# 
-# *This function should return a networkx MultiDiGraph named G_sc.*
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_five())
+#+END_SRC
 
-# In[ ]:
+#+RESULTS:
+: 126
 
+* 6 Subgraph nodes of largest strongly connected component
 
+ Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
+
+Call this graph G_sc.
+
+*This function should return a networkx MultiDiGraph named G_sc.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_six():
-        
-    # Your Code Here
+    """the sub-graph of the largest strongly connected component
     
-    return # Your Answer Here
+    Returns: 
+     networkx.MultiDiGraph: largest strongly connected component
+    """
+    one = answer_one()
+    return max(networkx.algorithms.strongly_connected_component_subgraphs(one),
+               key=len)
 
+#+END_SRC
 
-# ### Question 7
-# 
-# What is the average distance between nodes in G_sc?
-# 
-# *This function should return a float.*
+#+BEGIN_SRC ipython :session networkconnectivity :results none
+assert len(answer_six().nodes()) == answer_five()
+#+END_SRC
 
-# In[ ]:
+* 7 Average distance between nodes
+  What is the average distance between nodes in G_sc?
 
-
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_seven():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """average distance between nodes"""
+    return networkx.average_shortest_path_length(answer_six())
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_seven())
+#+END_SRC
 
-# ### Question 8
-# 
-# What is the largest possible distance between two employees in G_sc?
-# 
-# *This function should return an int.*
+#+RESULTS:
+: 1.6461587301587302
 
-# In[ ]:
+* 8 Largest Possible Distance Between Two Employees
 
+ What is the largest possible distance between two employees in G_sc?
 
+ *This function should return an int.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_eight():
         
     # Your Code Here
     
     return # Your Answer Here
 
+#+END_SRC
 
 # ### Question 9
 # 
