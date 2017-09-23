@@ -73,7 +73,7 @@ print(networkx.clustering(graph, "I"))
   There's two ways to calculate a clustering coefficient for the entire network. One is to take the average of all the local clustering coefficients, the other is to calculate the percentage of open triads (three nodes connected by two edges) that are triangles.
 
 ** Averaging
-   This is what wikipedia calls [https://en.wikipedia.org/wiki/Clustering_coefficient#Network_average_clustering_coefficient][network average clustering coefficie]
+   This is what wikipedia calls the [[https://en.wikipedia.org/wiki/Clustering_coefficient#Network_average_clustering_coefficient][network average clustering coefficient]]
 #+BEGIN_SRC ipython :session triadic_closure :results output
 coefficients = networkx.clustering(graph)
 average = sum(coefficients.values())/len(coefficients)
