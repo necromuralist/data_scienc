@@ -15,7 +15,7 @@
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/archive.html</loc>
-  <lastmod>2017-09-24T00:47:00Z</lastmod>
+  <lastmod>2017-09-24T19:50:00Z</lastmod>
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/authors/</loc>
@@ -31,7 +31,7 @@
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/categories/</loc>
-  <lastmod>2017-09-24T00:14:00Z</lastmod>
+  <lastmod>2017-09-24T01:37:00Z</lastmod>
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/categories/bokeh-plotting/</loc>
@@ -66,14 +66,6 @@
   <lastmod>2017-08-13T22:54:00Z</lastmod>
  </url>
  <url>
-  <loc>https://necromuralist.github.io/data_science/categories/mathjax/</loc>
-  <lastmod>2017-09-24T00:14:00Z</lastmod>
- </url>
- <url>
-  <loc>https://necromuralist.github.io/data_science/categories/networks-mathjax/</loc>
-  <lastmod>2017-09-24T00:14:00Z</lastmod>
- </url>
- <url>
   <loc>https://necromuralist.github.io/data_science/categories/networks/</loc>
   <lastmod>2017-09-23T23:52:00Z</lastmod>
  </url>
@@ -91,15 +83,11 @@
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/index-1.html</loc>
-  <lastmod>2017-09-24T00:47:00Z</lastmod>
+  <lastmod>2017-09-24T19:50:00Z</lastmod>
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/pages/portland-unemployment-2007-to-2017/</loc>
   <lastmod>2017-08-13T22:54:00Z</lastmod>
- </url>
- <url>
-  <loc>https://necromuralist.github.io/data_science/posts/Triadic-Closure-%28Clustering%29/</loc>
-  <lastmod>2017-09-23T23:52:00Z</lastmod>
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/posts/assignment-2-introduction-to-nltk/</loc>
@@ -118,8 +106,12 @@
   <lastmod>2017-08-13T22:54:00Z</lastmod>
  </url>
  <url>
+  <loc>https://necromuralist.github.io/data_science/posts/distance-in-social-networks/</loc>
+  <lastmod>2017-09-24T19:52:00Z</lastmod>
+ </url>
+ <url>
   <loc>https://necromuralist.github.io/data_science/posts/evaluating-a-model/</loc>
-  <lastmod>2017-08-13T22:54:00Z</lastmod>
+  <lastmod>2017-09-24T17:40:00Z</lastmod>
  </url>
  <url>
   <loc>https://necromuralist.github.io/data_science/posts/extracting-dates-from-medical-data/</loc>
