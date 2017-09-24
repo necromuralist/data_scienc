@@ -1,0 +1,264 @@
+#+TITLE: Distance
+* Introduction
+  When characterizing a graph one of the things to look at is how far apart the nodes are.
+
+#+BEGIN_SRC ipython :session distance :results none
+# from pypi
+import networkx
+#+END_SRC
+
+#+BEGIN_SRC ipython :session distance :results none
+% matplotlib inline
+#+END_SRC
+
+This will be the example network.
+
+#+BEGIN_SRC ipython :session distance :file /tmp/distance_example.png
+left = tuple("AAKBCCFEDEIE")
+right = tuple("KBBCFEGFEIJH")
+graph = networkx.Graph()
+graph.add_edges_from(list(zip(left, right)))
+networkx.draw(graph, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/distance_example.png]]
+
+* Defining Distance
+  This section will look at how we can measure the distance between nodes.
+
+** Paths
+  A path is a sequence of nodes connected by edges. One path from D to K might be D-E-C-B-K.
+
+#+BEGIN_SRC ipython :session distance :file /tmp/example_path.png
+left = tuple('DECB')
+right = tuple("ECBK")
+path = networkx.Graph()
+path.add_edges_from(list(zip(left, right)))
+networkx.draw(path, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/example_path.png]]
+** Distance
+  - The /length/ of a /path/ is the number of edges in it. 
+  - The /distance/ between two nodes is the length of the /shortest/ path between them.
+
+#+BEGIN_SRC ipython :session distance :results output
+dk_shortest_path = networkx.shortest_path(graph, "D", "K")
+print(dk_shortest_path)
+#+END_SRC
+
+#+RESULTS:
+: ['D', 'E', 'C', 'B', 'K']
+
+#+BEGIN_SRC ipython :session distance :results output
+length = networkx.shortest_path_length(graph, "D", "K")
+print(length)
+assert len(dk_shortest_path) - 1 == networkx.shortest_path_length(graph, "D", "K")
+#+END_SRC
+
+#+RESULTS:
+: 4
+
+As you can see the path we saw earlier is the shortest path and the distance from D to K is 4.
+
+** Breadth-First Search
+  One way to compute the distances from one node to all the other nodes is to create a tree using Breadth-First-search. Breadth-First search will eliminate any cycles and leave us with the shortest paths to each node.
+
+This is the tree created for the node A.
+
+#+BEGIN_SRC ipython :session distance :file /tmp/example_bfs.png
+tree = networkx.bfs_tree(graph, "A")
+positions = networkx.drawing.nx_agraph.graphviz_layout(tree, prog="dot")
+networkx.draw(tree, positions, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/example_bfs.png]]
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.shortest_path_length(graph, "A"))
+#+END_SRC
+
+#+RESULTS:
+: {'J': 5, 'D': 4, 'H': 4, 'F': 3, 'K': 1, 'A': 0, 'B': 1, 'C': 2, 'E': 3, 'G': 4, 'I': 4}
+
+Looking at the shortest path-lengths to /A/, you can see that /J/ is is the furthest away, with 5 edges separating them, while /B/ and /K/ are the closest with only 1 hop.
+
+* Graph Distance
+  This looks at how you can answer questions about the graph as a whole.
+
+** Average Distance
+   One measure is the average of the distances between ever pair of nodes.
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.average_shortest_path_length(graph))
+#+END_SRC
+
+#+RESULTS:
+: 2.5272727272727273
+
+The average distance for our example is around two and a half edges.
+
+** Diameter
+   The /diameter/ of a graph is the maximum distance between any of the pairs of nodes. Note that /distance/ is always the shortest path between nodes, so this isn't the longest path in the graph.
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.diameter(graph))
+#+END_SRC
+
+#+RESULTS:
+: 5
+
+The greatest distance is 5 hops in our example.
+
+** Eccentricity
+   This is the largest distance between a node and all the other nodes.
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.eccentricity(graph))
+#+END_SRC
+
+#+RESULTS:
+: {'J': 5, 'D': 4, 'H': 4, 'F': 3, 'K': 5, 'A': 5, 'B': 4, 'C': 3, 'E': 3, 'G': 4, 'I': 4}
+
+Looking at the output we can see that A, J, and K all have eccentricities matching the diameter. According to [[http://www.etymonline.com/index.php?term=eccentric&allowed_in_frame=0][the Online Etymology Dictionary]], /eccentric/ means an orbiting object that doesn't have the earth at the center of its orbit. More literally, it means out of center (or off center).
+
+** Radius
+   The radius is the minimum eccentricity in a graph.
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.radius(graph))
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+So the /radius/ is the smallest of the largest distances for all the nodes.
+
+** Periphery
+   This is the set of nodes whose /eccentricity/ is equal to the /diameter/ (5 in our case).
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.periphery(graph))
+#+END_SRC
+
+#+RESULTS:
+: ['J', 'K', 'A']
+
+Looking at the output and the graph, the diameter of the graph is the distance from A to J or K to J.
+
+** Center
+   This is the set of nodes whose /eccentricity/ is equal to the /radius/ of the graph (3 in this example).
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.center(graph))
+#+END_SRC
+
+#+RESULTS:
+: ['F', 'C', 'E']
+
+#+BEGIN_SRC ipython :session distance :file /tmp/center.png
+positions = networkx.drawing.nx_agraph.graphviz_layout(graph, prog="dot")
+networkx.draw(graph, positions, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/center.png]]
+Looking at the graph, you can see that F, C, and, E do in fact form the center triangle.
+
+* Karate Club
+  This looks at the network created by the relationships between members of a karate club that is on the verge of splitting up.
+
+#+BEGIN_SRC ipython :session distance :file /tmp/karate.png
+karate = networkx.karate_club_graph()
+networkx.draw(karate, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/karate.png]]
+#+BEGIN_SRC ipython :session distance :file /tmp/karate_circle.png
+networkx.draw_circular(karate, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/karate_circle.png]]
+
+You can see that there are some central characters in the club, notably 0, 32, and 33.
+
+#+BEGIN_SRC ipython :session distance :results output
+degrees = ((node, karate.degree(node)) for node in karate.nodes())
+degrees = ((node, degree) for node, degree in degrees if degree > 10)
+print("Node\tDegree")
+for node, degree in degrees:
+    print("{}\t{}".format(node, degree))
+#+END_SRC
+
+#+RESULTS:
+: Node	Degree
+: 0	16
+: 32	12
+: 33	17
+
+The cut-off of 10 degrees was somewhat arbitrary, there are two nodes with degrees 9 and 10 respectively, but you can see that these three nodes were the most connected members of the club.
+
+** What is the average distance?
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.average_shortest_path_length(karate))
+#+END_SRC
+
+#+RESULTS:
+: 2.408199643493761
+
+The path lengths are relatively short, on average.
+
+** Diameter
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.diameter(karate))
+#+END_SRC
+
+#+RESULTS:
+: 5
+
+The maximum distance is 5.
+
+** Eccentricity
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.eccentricity(karate))
+#+END_SRC
+
+#+RESULTS:
+: {0: 3, 1: 3, 2: 3, 3: 3, 4: 4, 5: 4, 6: 4, 7: 4, 8: 3, 9: 4, 10: 4, 11: 4, 12: 4, 13: 3, 14: 5, 15: 5, 16: 5, 17: 4, 18: 5, 19: 3, 20: 5, 21: 4, 22: 5, 23: 5, 24: 4, 25: 4, 26: 5, 27: 4, 28: 4, 29: 5, 30: 4, 31: 3, 32: 4, 33: 4}
+
+** Radius
+   What is the smallest eccentricity?
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.radius(karate))
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+** Periphery
+   Which nodes are furthest apart?
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.periphery(karate))
+#+END_SRC
+
+#+RESULTS:
+: [14, 15, 16, 18, 20, 22, 23, 26, 29]
+
+** Center
+
+#+BEGIN_SRC ipython :session distance :results output
+print(networkx.center(karate))
+#+END_SRC
+
+#+RESULTS:
+: [0, 1, 2, 3, 8, 13, 19, 31]
+
