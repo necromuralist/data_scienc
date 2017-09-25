@@ -141,7 +141,9 @@ def answer_three():
                 break
         if not all_connected:
             break
+    # return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)
     return fully_connected, all_connected
+    
 #+END_SRC
 
 #+BEGIN_SRC ipython :session networkconnectivity :results output
@@ -219,7 +221,8 @@ def answer_six():
 #+END_SRC
 
 #+BEGIN_SRC ipython :session networkconnectivity :results none
-assert len(answer_six().nodes()) == answer_five()
+strongly_connected = answer_six()
+assert len(strongly_connected.nodes()) == answer_five()
 #+END_SRC
 
 * 7 Average distance between nodes
@@ -228,7 +231,7 @@ assert len(answer_six().nodes()) == answer_five()
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_seven():
     """average distance between nodes"""
-    return networkx.average_shortest_path_length(answer_six())
+    return networkx.average_shortest_path_length(strongly_connected)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session networkconnectivity :results output
@@ -246,7 +249,7 @@ print(answer_seven())
 
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_eight():
-        
+
     # Your Code Here
     
     return # Your Answer Here
