@@ -1,0 +1,415 @@
+#+TITLE: Quiz 2
+
+#+BEGIN_SRC ipython :session quiz2 :results none
+# pypi
+from networkx import (
+    clustering,
+    draw,
+    DiGraph,
+    Graph,
+)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz2 :results none
+% matplotlib inline
+#+END_SRC
+
+* What is the value of node F's clustering coefficient?
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_one.png
+left = tuple("AAAAABBCCDDE")
+right = tuple("BCDEFCFDFEFF")
+graph_one = Graph()
+graph_one.add_edges_from(list(zip(left, right)))
+draw(graph_one, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_one.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(clustering(graph_one, 'F'))
+#+END_SRC
+
+#+RESULTS:
+: 0.7
+
+* Question 2
+  
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/two_left.png
+left = tuple("AABCCDEEFGGH")
+right = tuple("BIIDIIFIIHII")
+graph_a = Graph()
+graph_a.add_edges_from(list(zip(left, right)))
+draw(graph_a, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/two_left.png]]
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/two_right.png
+left = tuple("ABBBBCCCEEEGH")
+right = tuple("BCEHIDEIFHIHI")
+graph_b = Graph()
+graph_b.add_edges_from(list(zip(left, right)))
+draw(graph_b, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/two_right.png]]
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.average_clustering(graph_a))
+print(networkx.transitivity(graph_a))
+#+END_SRC
+
+#+RESULTS:
+: 0.9047619047619047
+: 0.3333333333333333
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.average_clustering(graph_b))
+print(networkx.transitivity(graph_b))
+#+END_SRC
+
+#+RESULTS:
+: 0.3148148148148148
+: 0.5526315789473685
+
+A has a higher average clustering coefficent than B and B has higher transitivity than A.
+
+* Question 3
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_three.png
+def make_graph_three():
+    left = tuple("AABCCDDEF")
+    right = tuple("BCDDEEGGG")
+    graph_3 = Graph()
+    graph_3.add_edges_from(list(zip(left, right)))
+    return graph_3
+graph_3 = make_graph_three()
+draw(graph_3, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_three.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+diameter = networkx.diameter(graph_3)
+print(diameter)
+#+END_SRC
+
+#+RESULTS:
+: 4
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+radius = networkx.radius(graph_3)
+print(radius)
+#+END_SRC
+
+#+RESULTS:
+: 2
+
+The radius of this network is half of its diameter.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.is_connected(graph_3))
+#+END_SRC
+
+#+RESULTS:
+: True
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+graph_3.remove_node("G")
+print(networkx.is_connected(graph_3))
+#+END_SRC
+
+#+RESULTS:
+: False
+
+Removing node G will make the network disconnected.
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/bfs_3.png
+starting_graph = make_graph_three()
+tree = networkx.bfs_tree(starting_graph, "A")
+positions = networkx.drawing.nx_agraph.graphviz_layout(tree, prog="dot")
+draw(tree, positions, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/bfs_3.png]]
+The tree from node A has depth 4.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.center(starting_graph))
+#+END_SRC
+
+#+RESULTS:
+: ['D', 'E']
+
+Node C is not in the center of the network.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.periphery(starting_graph))
+#+END_SRC
+
+#+RESULTS:
+: ['A', 'F']
+
+F is not the only node in the periphery of the network.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+eccentricities = networkx.eccentricity(starting_graph)
+print(eccentricities)
+assert eccentricities["B"] == eccentricities["C"]
+#+END_SRC
+
+#+RESULTS:
+: {'G': 3, 'A': 4, 'B': 3, 'D': 2, 'F': 4, 'C': 3, 'E': 2}
+
+The eccentricity of B and C are equal
+
+* Question 4
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_four.png
+def make_four():
+    left = tuple("AABBCDDEEFII")
+    right = tuple("CDDFGEHGHHJK")
+    graph_4 = Graph()
+    graph_4.add_edges_from(list(zip(left, right)))
+    return graph_4
+graph_4 = make_four()
+draw(graph_4, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_four.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.is_connected(graph_4))
+#+END_SRC
+
+#+RESULTS:
+: False
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.number_connected_components(graph_4))
+#+END_SRC
+
+#+RESULTS:
+: 2
+
+It is a disconnected graph with 2 components.-
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+graph_4.remove_edge("E", "G")
+print(networkx.number_connected_components(graph_4))
+#+END_SRC
+
+#+RESULTS:
+: 2
+
+Removing E-G doesn't change the number of connected components.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+graph_4 = make_four()
+for node in ("I", "J", "K"):
+    print("{}: {}".format(node, networkx.clustering(graph_4, node)))
+#+END_SRC
+
+#+RESULTS:
+: I: 0.0
+: J: 0.0
+: K: 0.0
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/four_connected_try.png
+graph_4.add_edge("E", "J")
+draw(graph_4, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/four_connected_try.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.is_connected(graph_4))
+#+END_SRC
+
+#+RESULTS:
+: True
+
+Adding edge E-J makes the graph connected.
+
+* Question Five
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/five_a.png
+left = tuple("AABCDE")
+right = tuple("BCCBCB")
+five_a = DiGraph()
+five_a.add_edges_from(list(zip(left, right)))
+draw(five_a, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/five_a.png]]
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/five_b.png
+left = tuple("AAABBCDE")
+right = tuple("BCDCAAEC")
+five_b = DiGraph()
+five_b.add_edges_from(list(zip(left, right)))
+draw(five_b, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/five_b.png]]
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/five_c.png
+left = tuple("AABC")
+right = tuple("CDAB")
+five_c = DiGraph()
+five_c.add_edges_from(list(zip(left, right)))
+draw(five_c, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/five_c.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.is_strongly_connected(five_a))
+print(networkx.is_strongly_connected(five_b))
+print(networkx.is_strongly_connected(five_c))
+#+END_SRC
+
+#+RESULTS:
+: False
+: True
+: False
+
+Only network B is a strongly connected graph.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+five_a.add_edge("C", "D")
+print(networkx.is_strongly_connected(five_a))
+#+END_SRC
+
+#+RESULTS:
+: False
+
+Adding an edge from C to D won't make graph A a strongly connected garph (there's still no way from C to A).
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+five_b.remove_edge("B", "A")
+print(networkx.is_strongly_connected(five_b))
+#+END_SRC
+
+#+RESULTS:
+: True
+
+Not all the edges in graph B are needed for it to remain a strongly connected graph.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+five_c.add_edge("D", "B")
+print(networkx.is_strongly_connected(five_c))
+#+END_SRC
+
+#+RESULTS:
+: True
+
+We only need to add one edge to graph C to make it strongly connected.
+
+* Question seven
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_7.png
+left = tuple("AAABBBCCDEEEGGGHHKK")
+right = tuple("BCFCDEEFEFGHHKMMNMN")
+graph_7 = Graph()
+graph_7.add_edges_from(list(zip(left, right)))
+draw(graph_7, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_7.png]]
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.is_connected(graph_7))
+#+END_SRC
+
+#+RESULTS:
+: True
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.node_connectivity(graph_7))
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.minimum_node_cut(graph_7))
+#+END_SRC
+
+#+RESULTS:
+: {'E'}
+
+Removing one node (E) would disconnect this graph.
+
+* Question Eight
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_eight.png
+left = tuple("AAABBBCCDEEEGGGHHKK")
+right = tuple("BCFCDEEFEFGHHKMMNMN")
+graph_8 = Graph()
+graph_8.add_edges_from(list(zip(left, right)))
+draw(graph_8, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_eight.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.edge_connectivity(graph_8))
+#+END_SRC
+
+#+RESULTS:
+: 2
+
+* Question 9
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_9.png
+left = tuple("ABCCDDEEFFFGHHJK")
+right = tuple("CABEABFHGHKKJKEJ")
+graph_9 = DiGraph()
+graph_9.add_edges_from(list(zip(left, right)))
+draw(graph_9, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_9.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(len(sorted(networkx.all_simple_paths(graph_9, "D", "K"))))
+#+END_SRC
+
+#+RESULTS:
+: 8
+
+* Question Ten
+
+#+BEGIN_SRC ipython :session quiz2 :file /tmp/question_ten.png
+left = tuple("ABCCDDEEFFFGHHJK")
+right = tuple("CABEABFHGHKKJKEJ")
+graph_10 = DiGraph()
+graph_10.add_edges_from(list(zip(left, right)))
+draw(graph_10, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/question_ten.png]]
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(networkx.node_connectivity(graph_10, "E", "K"))
+#+END_SRC
+
+#+RESULTS:
+: 2
+
+Removing one node (such as H) will not break the connection.
+
+#+BEGIN_SRC ipython :session quiz2 :results output
+print(list(networkx.all_simple_paths(graph_10, "E", "K")))
+#+END_SRC
+
+#+RESULTS:
+: [['E', 'F', 'G', 'K'], ['E', 'F', 'K'], ['E', 'F', 'H', 'K'], ['E', 'H', 'K']]
+
+Removing H alone won't break the connection, but removing F and H will.
