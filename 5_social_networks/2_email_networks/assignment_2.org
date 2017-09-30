@@ -119,6 +119,9 @@ print(answer_two())
 
 *This function should return a tuple of bools (part1, part2).*
 
+
+Part 2 seems to assume that any path means communication between nodes is possible, even though that means that it might have to be forwarded by an employee.
+
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_three():
     """decides connectivity based on emails
@@ -133,21 +136,7 @@ def answer_three():
      tuple: (every employee contacted every other employee, every employee contacted once)
     """
     emails = answer_one()
-    #nodes = emails.nodes()
-    #other_nodes = len(nodes) - 1
-    #fully_connected = all((len(emails.neighbors(node)) == other_nodes for node in nodes))
-    #undirected = emails.to_undirected()
-    #all_connected = True
-    #for left_node in nodes:
-    #    for right_node in nodes:
-    #        if left_node != right_node and not undirected.has_edge(left_node, right_node):
-    #            all_connected = False
-    #            break
-    #    if not all_connected:
-    #        break
-    # return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)
-    # return fully_connected, all_connected
-    return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)
+    return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)    
 #+END_SRC
 
 #+BEGIN_SRC ipython :session networkconnectivity :results output
@@ -155,7 +144,7 @@ print(answer_three())
 #+END_SRC
 
 #+RESULTS:
-: (False, False)
+: (False, True)
 
 * 4 Largest Weakly Connected Component
 
