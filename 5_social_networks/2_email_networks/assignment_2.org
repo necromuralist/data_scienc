@@ -15,7 +15,7 @@ Each node represents an employee and each directed edge between two nodes repres
 * Tangle
   This is for troubleshooting.
 
-#+BEGIN_SRC python :tangle assignment1.py
+#+BEGIN_SRC python :tangle assignment2.py
 <<imports>>
 
 <<data>>
@@ -24,6 +24,10 @@ Each node represents an employee and each directed edge between two nodes repres
 #+END_SRC
 * Imports
 #+BEGIN_SRC ipython :session networkconnectivity :results none :noweb-ref imports
+# python standard library
+from collections import defaultdict
+
+# pypi
 import networkx
 import pandas
 import seaborn
@@ -129,21 +133,21 @@ def answer_three():
      tuple: (every employee contacted every other employee, every employee contacted once)
     """
     emails = answer_one()
-    nodes = emails.nodes()
-    other_nodes = len(nodes) - 1
-    fully_connected = all((len(emails.neighbors(node)) == other_nodes for node in nodes))
-    undirected = emails.to_undirected()
-    all_connected = True
-    for left_node in nodes:
-        for right_node in nodes:
-            if left_node != right_node and not undirected.has_edge(left_node, right_node):
-                all_connected = False
-                break
-        if not all_connected:
-            break
+    #nodes = emails.nodes()
+    #other_nodes = len(nodes) - 1
+    #fully_connected = all((len(emails.neighbors(node)) == other_nodes for node in nodes))
+    #undirected = emails.to_undirected()
+    #all_connected = True
+    #for left_node in nodes:
+    #    for right_node in nodes:
+    #        if left_node != right_node and not undirected.has_edge(left_node, right_node):
+    #            all_connected = False
+    #            break
+    #    if not all_connected:
+    #        break
     # return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)
-    return fully_connected, all_connected
-    
+    # return fully_connected, all_connected
+    return networkx.is_strongly_connected(emails), networkx.is_weakly_connected(emails)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session networkconnectivity :results output
@@ -249,109 +253,161 @@ print(answer_seven())
 
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_eight():
-
-    # Your Code Here
-    
-    return # Your Answer Here
-
+    """Largest possible distance between employees"""
+    return networkx.diameter(strongly_connected)
 #+END_SRC
 
-# ### Question 9
-# 
-# What is the set of nodes in G_sc with eccentricity equal to the diameter?
-# 
-# *This function should return a set of the node(s).*
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_eight())
+#+END_SRC
 
-# In[ ]:
+#+RESULTS:
+: 3
 
+* Question 9
 
+What is the set of nodes in G_sc with eccentricity equal to the diameter?
+
+*This function should return a set of the node(s).*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_nine():
-       
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Nodes with eccentricity equal to diameter"""    
+    return networkx.periphery(strongly_connected)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_nine())
+#+END_SRC
+
+#+RESULTS:
+: ['129', '134', '97']
 
 
-# ### Question 10
-# 
-# What is the set of node(s) in G_sc with eccentricity equal to the radius?
-# 
-# *This function should return a set of the node(s).*
+* Question 10
 
-# In[ ]:
+What is the set of node(s) in G_sc with eccentricity equal to the radius?
 
+*This function should return a set of the node(s).*
 
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_ten():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Nodes with eccentricity equal to the radius"""
+    return networkx.center(strongly_connected)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_ten())
+#+END_SRC
 
-# ### Question 11
-# 
-# Which node in G_sc has the most shortest paths to other nodes whose distance equal the diameter of G_sc?
-# 
-# 
-# How many of these paths are there?
-# 
-# 
-# *This function should return a tuple (name of node, number of paths).*
+#+RESULTS:
+: ['38']
 
-# In[ ]:
+* Question 11
 
+  - Which node in G_sc has the most shortest paths to other nodes whose distance equal the diameter of G_sc?
+  - How many of these paths are there?
+ 
+*This function should return a tuple (name of node, number of paths).*
 
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_eleven():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """node with most shortest paths to other peripheral nodes"""
+    candidates = networkx.periphery(strongly_connected)
+    outcomes = defaultdict(int)
+    for candidate_1 in candidates:
+        for candidate_2 in candidates:
+            if (candidate_1 != candidate_2
+                and networkx.has_path(strongly_connected,
+                                      candidate_1,
+                                      candidate_2)):
+                outcomes[candidate_1] += len(list(networkx.all_shortest_paths(strongly_connected,
+                                                                              candidate_1,
+                                                                              candidate_2)))
+    node = max(outcomes, key=lambda key: outcomes[key])
+    return node, outcomes[node]
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_eleven())
+#+END_SRC
 
-# ### Question 12
-# 
-# Suppose you want to prevent communication from flowing to the node that you found in the previous question from any node in the center of G_sc, what is the smallest number of nodes you would need to remove from the graph (you're not allowed to remove the node from the previous question or the center nodes)? 
-# 
-# *This function should return an integer.*
+#+RESULTS:
+: ('129', 15)
 
-# In[ ]:
+* Question 12
 
+Suppose you want to prevent communication from flowing to the node that you found in the previous question from any node in the center of G_sc, what is the smallest number of nodes you would need to remove from the graph (you're not allowed to remove the node from the previous question or the center nodes)? 
 
+*This function should return an integer.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_twelve():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Smallest number of nodes to remove node from graph"""
+    node, count = answer_eleven()    
+    center = networkx.center(strongly_connected)
+    remove = [networkx.node_connectivity(strongly_connected, node, other) for other in center]
+    return max(remove)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_twelve())
+#+END_SRC
 
-# ### Question 13
-# 
-# Construct an undirected graph G_un using G_sc (you can ignore the attributes).
-# 
-# *This function should return a networkx Graph.*
+#+RESULTS:
+: 5
 
-# In[ ]:
+* Question 13
 
+Construct an undirected graph G_un using G_sc (you can ignore the attributes).
 
+ *This function should return a networkx Graph.*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_thirteen():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """undirected version of strongly connected graph"""
+    return strongly_connected.to_undirected()
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :file /tmp/strongly_undirected.png
+graph = answer_thirteen()
+networkx.draw(graph, with_labels=True)
+#+END_SRC
 
-# ### Question 14
-# 
-# What is the transitivity and average clustering coefficient of graph G_un?
-# 
-# *This function should return a tuple (transitivity, avg clustering).*
+#+RESULTS:
+[[file:/tmp/strongly_undirected.png]]
 
-# In[ ]:
+* Question 14
 
+What is the transitivity and average clustering coefficient of graph G_un?
 
+ *This function should return a tuple (transitivity, avg clustering).*
+
+#+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_fourteen():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    graph = answer_thirteen()
+    graph = networkx.Graph(graph)
+    return networkx.transitivity(graph), networkx.average_clustering(graph)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(answer_fourteen())
+#+END_SRC
+
+#+RESULTS:
+: (0.570111160700385, 0.6975272437231419)
+* Grading
+** Function answer_one was answered correctly, 0.09 points were awarded. Student solution correct. 
+** Function answer_two was answered correctly, 0.07 points were awarded. Correct. Correct. 
+** Function answer_three was answered correctly, 0.07 points were awarded. Correct. Correct. 
+** Function answer_four was answered correctly, 0.07 points were awarded. Correct. 
+** Function answer_five was answered incorrectly, 0.07 points were not awarded.
+** Function answer_six was answered correctly, 0.07 points were awarded. Student solution correct.
+** Function answer_seven was answered incorrectly, 0.07 points were not awarded. 
+** Function answer_eight was answered incorrectly, 0.07 pointswere not awarded. 
+** Function answer_nine was answered incorrectly, 0.07 points were not awarded. 
+** Function answer_ten was answered incorrectly, 0.07 points were not awarded.
+** Function answer_eleven was answered incorrectly, 0.07 points were not awarded. 
+** Function answer_twelve was answered incorrectly, 0.07 points were not awarded. 
+** Function answer_thirteen was answered incorrectly, 0.07 points were not awarded. 
+** Function answer_fourteen was answered incorrectly, 0.07 points were not awarded.
