@@ -246,16 +246,3 @@ print(answer_nine())
 
 #+RESULTS:
 : ['dailykos.com', 'talkingpointsmemo.com', 'atrios.blogspot.com', 'washingtonmonthly.com', 'talkleft.com']
-
-* Grader
-** Correct
-*** Function answer_one was answered correctly
-*** Function answer_two was answered correctly
-*** Function answer_three was answered correctly
-*** Function answer_four was answered correctly
-*** Function answer_five was answered correctly
-*** Function answer_six was answered correctly
-** Incorrect
-*** Function answer_seven was answered incorrectly
-*** Function answer_eight was answered incorrectly,
-*** Function answer_nine was answered incorrectly,
