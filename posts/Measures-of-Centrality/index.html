@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article# " lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Centrality measurements for a friendship network and political blogs">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measures of Centrality | Data Science With Python</title>
+<link href="../../assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
+<link href="../../assets/css/ipython.min.css" rel="stylesheet" type="text/css">
+<link href="../../assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
+<meta name="theme-color" content="#5670d4">
+<meta name="generator" content="Nikola (getnikola.com)">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="../../rss.xml">
+<link rel="canonical" href="https://necromuralist.github.io/data_science/posts/Measures-of-Centrality/">
+<!--[if lt IE 9]><script src="../../assets/js/html5.js"></script><![endif]--><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+</script><meta name="author" content="hades">
+<link rel="prev" href="../node-importance/" title="Node Importance" type="text/html">
+<meta property="og:site_name" content="Data Science With Python">
+<meta property="og:title" content="Measures of Centrality">
+<meta property="og:url" content="https://necromuralist.github.io/data_science/posts/Measures-of-Centrality/">
+<meta property="og:description" content="Centrality measurements for a friendship network and political blogs">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2017-09-30T17:56:00-07:00">
+<meta property="article:tag" content="centrality">
+<meta property="article:tag" content="networks">
+</head>
+<body>
+<a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
+
+<!-- Menubar -->
+
+<nav class="navbar navbar-default navbar-static-top"><div class="container">
+<!-- This keeps the margins nice -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="https://necromuralist.github.io/data_science/">
+
+                <span id="blog-title">Data Science With Python</span>
+            </a>
+        </div>
+<!-- /.navbar-header -->
+        <div class="collapse navbar-collapse" id="bs-navbar" aria-expanded="false">
+            <ul class="nav navbar-nav">
+<li class="dropdown">
+<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Projects <b class="caret"></b></a>
+            <ul class="dropdown-menu"><li>
+<a href="../../pages/portland-unemployment-2007-to-2017">Portland Unemployment Visualization</a>
+            </li></ul>
+</li>
+<li>
+<a href="../../archive.html">Archive</a>
+                </li>
+<li>
+<a href="../../categories/">Tags</a>
+                </li>
+<li>
+<a href="../../rss.xml">RSS feed</a>
+
+                
+            </li>
+</ul>
+<!-- Google custom search --><form method="get" action="https://www.google.com/search" class="navbar-form
+ navbar-right" role="search">
+<div class="form-group">
+<input type="text" name="q" class="form-control" placeholder="Search">
+</div>
+<button type="submit" class="btn btn-primary">
+<span class="glyphicon glyphicon-search"></span>
+</button>
+<input type="hidden" name="sitesearch" value="https://necromuralist.github.io/data_science/">
+</form>
+<!-- End of custom search -->
+
+
+            <ul class="nav navbar-nav navbar-right">
+<li>
+    <a href="index.rst" id="sourcelink">Source</a>
+    </li>
+
+                
+            </ul>
+</div>
+<!-- /.navbar-collapse -->
+    </div>
+<!-- /.container -->
+</nav><!-- End of Menubar --><div class="container" id="content" role="main">
+    <div class="body-content">
+        <!--Body content-->
+        <div class="row">
+            
+            
+<article class="post-text h-entry hentry postpage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="." class="u-url">Measures of Centrality</a></h1>
+
+        <div class="metadata">
+            <p class="byline author vcard"><span class="byline-name fn" itemprop="author">
+                    <a href="../../authors/hades/">hades</a>
+            </span></p>
+            <p class="dateline"><a href="." rel="bookmark"><time class="published dt-published" datetime="2017-09-30T17:56:00-07:00" itemprop="datePublished" title="2017-09-30 17:56">2017-09-30 17:56</time></a></p>
+            
+        <p class="sourceline"><a href="index.rst" class="sourcelink">Source</a></p>
+
+        </div>
+        
+
+    </header><div class="e-content entry-content" itemprop="articleBody text">
+    <div>
+<p>In this assignment you will explore measures of centrality on two networks, a friendship network in Part 1, and a blog network in Part 2.</p>
+<div class="section" id="part-1-friendships">
+<h2>Part 1 - Friendships</h2>
+<div class="section" id="imports">
+<h3>1.1 Imports</h3>
+<pre class="code ipython"><a name="rest_code_0a8b59a83c6a4a2abcf5d13e8fb31274-1"></a><span class="kn">import</span> <span class="nn">networkx</span>
+</pre>
+</div>
+<div class="section" id="friendships-data">
+<h3>1.2 Friendships data</h3>
+<pre class="code ipython"><a name="rest_code_4d7fdabdf4e34d0fb5c308b05d88c412-1"></a><span class="n">friendships</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">read_gml</span><span class="p">(</span><span class="s1">'friendships.gml'</span><span class="p">)</span>
+</pre>
+</div>
+<div class="section" id="question-1">
+<h3>1.3 Question 1</h3>
+<p>Find the degree centrality, closeness centrality, and normalized betweeness centrality (excluding endpoints) of node 100.</p>
+<p><strong>This function should return a tuple of floats ``(degree_centrality, closeness_centrality, betweenness_centrality)``.</strong></p>
+<pre class="code ipython"><a name="rest_code_a3dd270f1aad442dad12596ec728daf5-1"></a><span class="n">DEGREE_CENTRALITY</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">degree_centrality</span><span class="p">(</span><span class="n">friendships</span><span class="p">)</span>
+<a name="rest_code_a3dd270f1aad442dad12596ec728daf5-2"></a><span class="n">CLOSENESS_CENTRALITY</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">closeness_centrality</span><span class="p">(</span><span class="n">friendships</span><span class="p">)</span>
+<a name="rest_code_a3dd270f1aad442dad12596ec728daf5-3"></a><span class="n">BETWEENNESS_CENTRALITY</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">betweenness_centrality</span><span class="p">(</span><span class="n">friendships</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-1"></a><span class="k">def</span> <span class="nf">answer_one</span><span class="p">():</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-2"></a>    <span class="sd">"""gets measures of centrality for node 100</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-3"></a>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-4"></a><span class="sd">    Returns:</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-5"></a><span class="sd">     tuple:</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-6"></a><span class="sd">      - float: degree centrality</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-7"></a><span class="sd">      - float: closeness centrality</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-8"></a><span class="sd">      - float: normalized betweeness centrality</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-9"></a><span class="sd">    """</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-10"></a>    <span class="n">NODE</span> <span class="o">=</span> <span class="mi">100</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-11"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">DEGREE_CENTRALITY</span><span class="p">[</span><span class="n">NODE</span><span class="p">],</span>
+<a name="rest_code_23312d0250ab4736a4cf2ce29b0c1e48-12"></a>            <span class="n">CLOSENESS_CENTRALITY</span><span class="p">[</span><span class="n">NODE</span><span class="p">],</span> <span class="n">BETWEENNESS_CENTRALITY</span><span class="p">[</span><span class="n">NODE</span><span class="p">])</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_57dc96aa118143ab89a7ebf890d1aa77-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_one</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+(0.0026501766784452294, 0.2654784240150094, 7.142902633244772e-05)
+</pre>
+<p>For Questions 2, 3, and 4, use one of the covered centrality measures to rank the nodes and find the most appropriate candidate.</p>
+<pre class="code ipython"><a name="rest_code_c76901c4cb5247e397f7fa053e284750-1"></a><span class="k">def</span> <span class="nf">largest_node</span><span class="p">(</span><span class="n">centrality</span><span class="p">):</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-2"></a>    <span class="sd">"""gets the node with the best (largest score)</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-3"></a>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-4"></a><span class="sd">    Returns:</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-5"></a><span class="sd">     int: name of the node with the best score</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-6"></a><span class="sd">    """</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-7"></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="nb">sorted</span><span class="p">((</span><span class="n">value</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+<a name="rest_code_c76901c4cb5247e397f7fa053e284750-8"></a>                                <span class="k">for</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="n">centrality</span><span class="o">.</span><span class="n">items</span><span class="p">())))[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+</pre>
+</div>
+<div class="section" id="question-2">
+<h3>1.4 Question 2</h3>
+<p>Suppose you are employed by an online shopping website and are tasked with selecting one user in network G1 to send an online shopping voucher to. We expect that the user who receives the voucher will send it to their friends in the network.  You want the voucher to reach as many nodes as possible. The voucher can be forwarded to multiple users at the same time, but the travel distance of the voucher is limited to one step, which means if the voucher travels more than one step in this network, it is no longer valid. Apply your knowledge in network centrality to select the best candidate for the voucher.</p>
+<p><strong>This function should return an integer, the name of the node.</strong></p>
+<pre class="code ipython"><a name="rest_code_0d5d8b8147494a568ffd090ccaf5cbb8-1"></a><span class="k">def</span> <span class="nf">answer_two</span><span class="p">():</span>
+<a name="rest_code_0d5d8b8147494a568ffd090ccaf5cbb8-2"></a>    <span class="sd">"""returns the node with the best degree centrality"""</span>
+<a name="rest_code_0d5d8b8147494a568ffd090ccaf5cbb8-3"></a>    <span class="k">return</span> <span class="n">largest_node</span><span class="p">(</span><span class="n">DEGREE_CENTRALITY</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_40dbe175266f4404886d6fa2e96e6f38-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_two</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+105
+</pre>
+</div>
+<div class="section" id="question-3">
+<h3>1.5 Question 3</h3>
+<p>Now the limit of the voucher’s travel distance has been removed. Because the network is connected, regardless of who you pick, every node in the network will eventually receive the voucher. However, we now want to ensure that the voucher reaches the nodes in the lowest average number of hops.</p>
+<p>How would you change your selection strategy? Write a function to tell us who is the best candidate in the network under this condition.</p>
+<p><strong>This function should return an integer, the name of the node.</strong></p>
+<pre class="code ipython"><a name="rest_code_e2212e1ef1dc4e2ea1fda25e6800de50-1"></a><span class="k">def</span> <span class="nf">answer_three</span><span class="p">():</span>
+<a name="rest_code_e2212e1ef1dc4e2ea1fda25e6800de50-2"></a>    <span class="sd">"""Returns the node with the best closeness centrality"""</span>
+<a name="rest_code_e2212e1ef1dc4e2ea1fda25e6800de50-3"></a>    <span class="k">return</span> <span class="n">largest_node</span><span class="p">(</span><span class="n">CLOSENESS_CENTRALITY</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_465265b0c2cb46839277301706bb2b1b-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_three</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+23
+</pre>
+</div>
+<div class="section" id="question-4">
+<h3>1.6 Question 4</h3>
+<p>Assume the restriction on the voucher’s travel distance is still removed, but now a competitor has developed a strategy to remove a person from the network in order to disrupt the distribution of your company’s voucher. Identify the single riskiest person to be removed under your competitor’s strategy?</p>
+<p><strong>This function should return an integer, the name of the node.</strong></p>
+<pre class="code ipython"><a name="rest_code_b82d6cb94e2d4a2399b1a9830d8cabf8-1"></a><span class="k">def</span> <span class="nf">answer_four</span><span class="p">():</span>
+<a name="rest_code_b82d6cb94e2d4a2399b1a9830d8cabf8-2"></a>    <span class="sd">"""the node with the highest betweenness centrality"""</span>
+<a name="rest_code_b82d6cb94e2d4a2399b1a9830d8cabf8-3"></a>    <span class="k">return</span> <span class="n">largest_node</span><span class="p">(</span><span class="n">BETWEENNESS_CENTRALITY</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_6bd632c08e4b4d73a79453c435b20947-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_four</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+333
+</pre>
+</div>
+</div>
+<div class="section" id="part-2-political-blogs">
+<h2>Part 2 - Political Blogs</h2>
+<p><tt class="docutils literal">blogs</tt> is a directed network of political blogs, where nodes correspond to a blog and edges correspond to links between blogs. Use your knowledge of PageRank and HITS to answer Questions 5-9.</p>
+<pre class="code ipython"><a name="rest_code_6700b8715aed49348b93ef892a104a8d-1"></a><span class="n">blogs</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">read_gml</span><span class="p">(</span><span class="s1">'blogs.gml'</span><span class="p">)</span>
+</pre>
+<div class="section" id="question-5">
+<h3>2.1 Question 5</h3>
+<p>Apply the Scaled Page Rank Algorithm to this network. Find the Page Rank of node 'realclearpolitics.com' with damping value 0.85.</p>
+<p><strong>This function should return a float.</strong></p>
+<pre class="code ipython"><a name="rest_code_e9b4db422af14e03a7666f7b57011898-1"></a><span class="n">PAGE_RANK</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">pagerank</span><span class="p">(</span><span class="n">blogs</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_e0aab162beb04c0a8426e018ebca447a-1"></a><span class="k">def</span> <span class="nf">answer_five</span><span class="p">():</span>
+<a name="rest_code_e0aab162beb04c0a8426e018ebca447a-2"></a>    <span class="sd">"""Page Rank of realclearpolitics.com"""</span>
+<a name="rest_code_e0aab162beb04c0a8426e018ebca447a-3"></a>    <span class="k">return</span> <span class="n">PAGE_RANK</span><span class="p">[</span><span class="s1">'realclearpolitics.com'</span><span class="p">]</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_2fdaac03ee2b4fe482eabba30261489c-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_five</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+0.004636694781649093
+</pre>
+</div>
+<div class="section" id="question-6">
+<h3>2.2 Question 6</h3>
+<p>Apply the Scaled Page Rank Algorithm to this network with damping value 0.85. Find the 5 nodes with highest Page Rank.</p>
+<p><strong>This function should return a list of the top 5 blogs in desending order of Page Rank.</strong></p>
+<pre class="code ipython"><a name="rest_code_6be669b4af644402a7bd8fe45f321cd8-1"></a><span class="k">def</span> <span class="nf">top_five</span><span class="p">(</span><span class="n">ranks</span><span class="p">):</span>
+<a name="rest_code_6be669b4af644402a7bd8fe45f321cd8-2"></a>    <span class="sd">"""gets the top-five blogs by rank"""</span>
+<a name="rest_code_6be669b4af644402a7bd8fe45f321cd8-3"></a>    <span class="n">top</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="nb">sorted</span><span class="p">((</span><span class="n">rank</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+<a name="rest_code_6be669b4af644402a7bd8fe45f321cd8-4"></a>                               <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">rank</span> <span class="ow">in</span> <span class="n">ranks</span><span class="o">.</span><span class="n">items</span><span class="p">())))[:</span><span class="mi">5</span><span class="p">]</span>
+<a name="rest_code_6be669b4af644402a7bd8fe45f321cd8-5"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">top</span><span class="p">]</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_2c29f860ea9548c0a15ced14ed4735ab-1"></a><span class="k">def</span> <span class="nf">answer_six</span><span class="p">():</span>
+<a name="rest_code_2c29f860ea9548c0a15ced14ed4735ab-2"></a>    <span class="sd">"""Top 5 nodes by page rank"""</span>
+<a name="rest_code_2c29f860ea9548c0a15ced14ed4735ab-3"></a>    <span class="k">return</span> <span class="n">top_five</span><span class="p">(</span><span class="n">PAGE_RANK</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_b9dd9fd2fa6140468c572fcb49f96534-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_six</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+['dailykos.com', 'atrios.blogspot.com', 'instapundit.com', 'blogsforbush.com', 'talkingpointsmemo.com']
+</pre>
+</div>
+<div class="section" id="question-7">
+<h3>2.3 Question 7</h3>
+<p>Apply the HITS Algorithm to the network to find the hub and authority scores of node 'realclearpolitics.com'.</p>
+<p><strong>Your result should return a tuple of floats `(hub_score, authority_score)`.</strong></p>
+<pre class="code ipython"><a name="rest_code_10fe363ca3c549b8a5d5813c11928292-1"></a><span class="n">HUBS</span><span class="p">,</span> <span class="n">AUTHORITIES</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">hits</span><span class="p">(</span><span class="n">blogs</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_ec7c03e549b14fbca1cd779565bf7fbe-1"></a><span class="k">def</span> <span class="nf">answer_seven</span><span class="p">():</span>
+<a name="rest_code_ec7c03e549b14fbca1cd779565bf7fbe-2"></a>    <span class="sd">"""HITS score for realclearpolitics.com"""</span>
+<a name="rest_code_ec7c03e549b14fbca1cd779565bf7fbe-3"></a>    <span class="k">return</span> <span class="n">HUBS</span><span class="p">[</span><span class="s1">'realclearpolitics.com'</span><span class="p">],</span> <span class="n">AUTHORITIES</span><span class="p">[</span><span class="s1">'realclearpolitics.com'</span><span class="p">]</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_e8309f7e26364503b256a092466aab16-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_seven</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+(0.0003243556140916669, 0.003918957645699851)
+</pre>
+</div>
+<div class="section" id="question-8">
+<h3>2.4 Question 8</h3>
+<p>Apply the HITS Algorithm to this network to find the 5 nodes with highest hub scores.</p>
+<p><strong>This function should return a list of the top 5 blogs in desending order of hub scores.</strong></p>
+<pre class="code ipython"><a name="rest_code_11067149dae842f29b17437fb702281c-1"></a><span class="k">def</span> <span class="nf">answer_eight</span><span class="p">():</span>
+<a name="rest_code_11067149dae842f29b17437fb702281c-2"></a>    <span class="sd">"""Top five blogs by hub scores"""</span>
+<a name="rest_code_11067149dae842f29b17437fb702281c-3"></a>    <span class="k">return</span> <span class="n">top_five</span><span class="p">(</span><span class="n">HUBS</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_02f3538824a64a07b7bcb922700ec447-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_eight</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+['politicalstrategy.org', 'madkane.com/notable.html', 'liberaloasis.com', 'stagefour.typepad.com/commonprejudice', 'bodyandsoul.typepad.com']
+</pre>
+<p>Apply the HITS Algorithm to this network to find the 5 nodes with highest authority scores.</p>
+<p><strong>This function should return a list of the top 5 blogs in desending order of authority scores.</strong></p>
+<pre class="code ipython"><a name="rest_code_f41184eb4baf42deb9450b0c2602b76c-1"></a><span class="k">def</span> <span class="nf">answer_nine</span><span class="p">():</span>
+<a name="rest_code_f41184eb4baf42deb9450b0c2602b76c-2"></a>    <span class="sd">"""the top 5 blogs by authorities score"""</span>
+<a name="rest_code_f41184eb4baf42deb9450b0c2602b76c-3"></a>    <span class="k">return</span> <span class="n">top_five</span><span class="p">(</span><span class="n">AUTHORITIES</span><span class="p">)</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_888d88e6d054412da2b5c59a1010cda3-1"></a><span class="k">print</span><span class="p">(</span><span class="n">answer_nine</span><span class="p">())</span>
+</pre>
+<pre class="literal-block">
+['dailykos.com', 'talkingpointsmemo.com', 'atrios.blogspot.com', 'washingtonmonthly.com', 'talkleft.com']
+</pre>
+</div>
+</div>
+</div>
+    </div>
+    <aside class="postpromonav"><nav><ul itemprop="keywords" class="tags">
+<li><a class="tag p-category" href="../../categories/centrality/" rel="tag">centrality</a></li>
+            <li><a class="tag p-category" href="../../categories/networks/" rel="tag">networks</a></li>
+        </ul>
+<ul class="pager hidden-print">
+<li class="previous">
+                <a href="../node-importance/" rel="prev" title="Node Importance">Previous post</a>
+            </li>
+        </ul></nav></aside></article>
+</div>
+        <!--End of body content-->
+
+        <footer id="footer">
+            Contents © 2017         <a href="mailto:necromuralist@gmail.com">necromuralist</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+<img alt="Creative Commons License BY-NC-SA" style="border-width:0; margin-bottom:12px;" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>
+            
+        </footer>
+</div>
+</div>
+
+
+            <script src="../../assets/js/all-nocdn.js"></script><script>$('a.image-reference:not(.islink) img:not(.islink)').parent().colorbox({rel:"gal",maxWidth:"100%",maxHeight:"100%",scalePhotos:true});</script><!-- fancy dates --><script>
+    moment.locale("en");
+    fancydates(0, "YYYY-MM-DD HH:mm");
+    </script><!-- end fancy dates -->
+</body>
+</html>

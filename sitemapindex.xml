@@ -7,7 +7,7 @@
                         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/authors/hades.xml</loc>
-  <lastmod>2017-09-24T19:52:00Z</lastmod>
+  <lastmod>2017-10-01T00:56:00Z</lastmod>
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/authors/necromuralist.xml</loc>
@@ -34,6 +34,10 @@
   <lastmod>2017-08-13T22:54:00Z</lastmod>
  </sitemap>
  <sitemap>
+  <loc>https://necromuralist.github.io/data_science/categories/centrality.xml</loc>
+  <lastmod>2017-10-01T00:56:00Z</lastmod>
+ </sitemap>
+ <sitemap>
   <loc>https://necromuralist.github.io/data_science/categories/coursera-pandas-datascience.xml</loc>
   <lastmod>2017-08-13T22:54:00Z</lastmod>
  </sitemap>
@@ -43,11 +47,15 @@
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/categories/machinelearning-kaggle.xml</loc>
-  <lastmod>2017-09-24T19:47:00Z</lastmod>
+  <lastmod>2017-09-24T22:42:00Z</lastmod>
+ </sitemap>
+ <sitemap>
+  <loc>https://necromuralist.github.io/data_science/categories/networks-centrality.xml</loc>
+  <lastmod>2017-10-01T00:29:00Z</lastmod>
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/categories/networks.xml</loc>
-  <lastmod>2017-09-24T19:52:00Z</lastmod>
+  <lastmod>2017-10-01T00:56:00Z</lastmod>
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/categories/python-visualization-coursera.xml</loc>
@@ -63,10 +71,10 @@
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/rss.xml</loc>
-  <lastmod>2017-09-24T19:52:00Z</lastmod>
+  <lastmod>2017-10-01T00:56:00Z</lastmod>
  </sitemap>
  <sitemap>
   <loc>https://necromuralist.github.io/data_science/sitemap.xml</loc>
-  <lastmod>2017-09-24T19:52:00Z</lastmod>
+  <lastmod>2017-10-01T00:56:00Z</lastmod>
  </sitemap>
 </sitemapindex>

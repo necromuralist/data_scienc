@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article# " lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="First look at node importance (centrality)">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Node Importance | Data Science With Python</title>
+<link href="../../assets/css/all-nocdn.css" rel="stylesheet" type="text/css">
+<link href="../../assets/css/ipython.min.css" rel="stylesheet" type="text/css">
+<link href="../../assets/css/nikola_ipython.css" rel="stylesheet" type="text/css">
+<meta name="theme-color" content="#5670d4">
+<meta name="generator" content="Nikola (getnikola.com)">
+<link rel="alternate" type="application/rss+xml" title="RSS" href="../../rss.xml">
+<link rel="canonical" href="https://necromuralist.github.io/data_science/posts/node-importance/">
+<!--[if lt IE 9]><script src="../../assets/js/html5.js"></script><![endif]--><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+</script><meta name="author" content="hades">
+<link rel="prev" href="../connected-components/" title="Connected Components" type="text/html">
+<link rel="next" href="../Measures-of-Centrality/" title="Measures of Centrality" type="text/html">
+<meta property="og:site_name" content="Data Science With Python">
+<meta property="og:title" content="Node Importance">
+<meta property="og:url" content="https://necromuralist.github.io/data_science/posts/node-importance/">
+<meta property="og:description" content="First look at node importance (centrality)">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2017-09-30T17:23:00-07:00">
+<meta property="article:tag" content="networks centrality">
+</head>
+<body>
+<a href="#content" class="sr-only sr-only-focusable">Skip to main content</a>
+
+<!-- Menubar -->
+
+<nav class="navbar navbar-default navbar-static-top"><div class="container">
+<!-- This keeps the margins nice -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar" aria-controls="bs-navbar" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="https://necromuralist.github.io/data_science/">
+
+                <span id="blog-title">Data Science With Python</span>
+            </a>
+        </div>
+<!-- /.navbar-header -->
+        <div class="collapse navbar-collapse" id="bs-navbar" aria-expanded="false">
+            <ul class="nav navbar-nav">
+<li class="dropdown">
+<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Projects <b class="caret"></b></a>
+            <ul class="dropdown-menu"><li>
+<a href="../../pages/portland-unemployment-2007-to-2017">Portland Unemployment Visualization</a>
+            </li></ul>
+</li>
+<li>
+<a href="../../archive.html">Archive</a>
+                </li>
+<li>
+<a href="../../categories/">Tags</a>
+                </li>
+<li>
+<a href="../../rss.xml">RSS feed</a>
+
+                
+            </li>
+</ul>
+<!-- Google custom search --><form method="get" action="https://www.google.com/search" class="navbar-form
+ navbar-right" role="search">
+<div class="form-group">
+<input type="text" name="q" class="form-control" placeholder="Search">
+</div>
+<button type="submit" class="btn btn-primary">
+<span class="glyphicon glyphicon-search"></span>
+</button>
+<input type="hidden" name="sitesearch" value="https://necromuralist.github.io/data_science/">
+</form>
+<!-- End of custom search -->
+
+
+            <ul class="nav navbar-nav navbar-right">
+<li>
+    <a href="index.rst" id="sourcelink">Source</a>
+    </li>
+
+                
+            </ul>
+</div>
+<!-- /.navbar-collapse -->
+    </div>
+<!-- /.container -->
+</nav><!-- End of Menubar --><div class="container" id="content" role="main">
+    <div class="body-content">
+        <!--Body content-->
+        <div class="row">
+            
+            
+<article class="post-text h-entry hentry postpage" itemscope="itemscope" itemtype="http://schema.org/Article"><header><h1 class="p-name entry-title" itemprop="headline name"><a href="." class="u-url">Node Importance</a></h1>
+
+        <div class="metadata">
+            <p class="byline author vcard"><span class="byline-name fn" itemprop="author">
+                    <a href="../../authors/hades/">hades</a>
+            </span></p>
+            <p class="dateline"><a href="." rel="bookmark"><time class="published dt-published" datetime="2017-09-30T17:23:00-07:00" itemprop="datePublished" title="2017-09-30 17:23">2017-09-30 17:23</time></a></p>
+            
+        <p class="sourceline"><a href="index.rst" class="sourcelink">Source</a></p>
+
+        </div>
+        
+
+    </header><div class="e-content entry-content" itemprop="articleBody text">
+    <div>
+<div class="section" id="introduction">
+<h2>1 Introduction</h2>
+<p>When looking at a network one of the things that might be useful is to identify the "important" nodes. Some cases where this would be useful are:</p>
+<ul class="simple">
+<li>indentifying people who have many connections in a social network</li>
+<li>people who are closest to other members of the network</li>
+<li>weakest links in the network</li>
+</ul>
+<pre class="code ipython"><a name="rest_code_b5f8aef86c0740b78e49adeabf10acee-1"></a><span class="c1"># from pypi</span>
+<a name="rest_code_b5f8aef86c0740b78e49adeabf10acee-2"></a><span class="kn">import</span> <span class="nn">networkx</span>
+</pre>
+<pre class="code ipython"><a name="rest_code_29798d8a337f42168094daa3ccb1def4-1"></a><span class="o">%</span> <span class="n">matplotlib</span> <span class="n">inline</span>
+</pre>
+</div>
+<div class="section" id="degree-centrality-undirected">
+<h2>2 Degree Centrality (undirected)</h2>
+<p>Degree centrality starts with the assumption that the person with the most connections (edges) is the most important. Rather than returning a count it is the degree of the node divided by the total possible number of edges that the node could have. For the case of the directed graph the degree of the incoming vertices and outgoing vertices would likely be treated separately.</p>
+<div class="math">
+\begin{equation*}
+Centrality_{degree}(v) = \frac{degree_v}{|N| - 1}
+\end{equation*}
+</div>
+<p>Where <em>N</em> is the the graph and <em>v</em> is the vertex (node) that we are measuring.</p>
+<ul class="simple">
+<li>A <strong>Degree Centrality</strong> of 1 means the node is directly connected to every other node</li>
+<li>A <strong>Degree Centrality</strong> of 0 means the node isn't connected to any other node in the network</li>
+</ul>
+<pre class="code ipython"><a name="rest_code_6527b8458713431886d144b847cce64d-1"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+<a name="rest_code_6527b8458713431886d144b847cce64d-2"></a><span class="n">left</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="s2">"AAABDE"</span><span class="p">)</span>
+<a name="rest_code_6527b8458713431886d144b847cce64d-3"></a><span class="n">right</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="s2">"BCEEEF"</span><span class="p">)</span>
+<a name="rest_code_6527b8458713431886d144b847cce64d-4"></a><span class="n">edges</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">))</span>
+<a name="rest_code_6527b8458713431886d144b847cce64d-5"></a><span class="n">graph</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+<a name="rest_code_6527b8458713431886d144b847cce64d-6"></a><span class="n">networkx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">with_labels</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre>
+<img alt="node_importance_graph.png" src="node_importance_graph.png"><p>In this graph there are six nodes so each node can have at most 5 links. <tt class="docutils literal">E</tt> has 4 so the degree centrality should be 4/5.</p>
+<pre class="code ipython"><a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-1"></a><span class="n">degree_centrality</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">degree_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+<a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-2"></a><span class="k">print</span><span class="p">(</span><span class="n">degree_centrality</span><span class="p">)</span>
+<a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-3"></a><span class="k">assert</span> <span class="n">degree_centrality</span><span class="p">[</span><span class="s2">"E"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span><span class="o">/</span><span class="mi">5</span>
+</pre>
+<pre class="literal-block">
+{'B': 0.4, 'E': 0.8, 'A': 0.6000000000000001, 'C': 0.2, 'D': 0.2, 'F': 0.2}
+</pre>
+</div>
+<div class="section" id="closeness-centrality">
+<h2>3 Closeness Centrality</h2>
+<p>This measure assumes that the node that is closest to all the other nodes is the most important. It is the ratio of the highest possible degree for the node to the sum of the shortest paths to the other nodes.</p>
+<div class="math">
+\begin{equation*}
+Centrality_{closeness}(v) = \frac{|N| - 1}{\textit{sum of shortest paths of v}}
+\end{equation*}
+</div>
+<p>Looking at <tt class="docutils literal">E</tt> again, you can see that the sum of its shortest paths is 6 so the <strong>closeness centrality</strong> should be 5/6.</p>
+<pre class="code ipython"><a name="rest_code_ca91b795007b402eae2ec376a7a5717d-1"></a><span class="n">closeness_centrality</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">closeness_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+<a name="rest_code_ca91b795007b402eae2ec376a7a5717d-2"></a><span class="k">print</span><span class="p">(</span><span class="n">closeness_centrality</span><span class="p">)</span>
+<a name="rest_code_ca91b795007b402eae2ec376a7a5717d-3"></a><span class="k">assert</span> <span class="n">closeness_centrality</span><span class="p">[</span><span class="s2">"E"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">5</span><span class="o">/</span><span class="mi">6</span>
+</pre>
+<pre class="literal-block">
+{'B': 0.625, 'E': 0.8333333333333334, 'A': 0.7142857142857143, 'C': 0.45454545454545453, 'D': 0.5, 'F': 0.5}
+</pre>
+</div>
+</div>
+    </div>
+    <aside class="postpromonav"><nav><ul itemprop="keywords" class="tags">
+<li><a class="tag p-category" href="../../categories/networks-centrality/" rel="tag">networks centrality</a></li>
+        </ul>
+<ul class="pager hidden-print">
+<li class="previous">
+                <a href="../connected-components/" rel="prev" title="Connected Components">Previous post</a>
+            </li>
+            <li class="next">
+                <a href="../Measures-of-Centrality/" rel="next" title="Measures of Centrality">Next post</a>
+            </li>
+        </ul></nav></aside></article>
+</div>
+        <!--End of body content-->
+
+        <footer id="footer">
+            Contents © 2017         <a href="mailto:necromuralist@gmail.com">necromuralist</a> - Powered by         <a href="https://getnikola.com" rel="nofollow">Nikola</a>         
+<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+<img alt="Creative Commons License BY-NC-SA" style="border-width:0; margin-bottom:12px;" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>
+            
+        </footer>
+</div>
+</div>
+
+
+            <script src="../../assets/js/all-nocdn.js"></script><script>$('a.image-reference:not(.islink) img:not(.islink)').parent().colorbox({rel:"gal",maxWidth:"100%",maxHeight:"100%",scalePhotos:true});</script><!-- fancy dates --><script>
+    moment.locale("en");
+    fancydates(0, "YYYY-MM-DD HH:mm");
+    </script><!-- end fancy dates -->
+</body>
+</html>

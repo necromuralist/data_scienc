@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="../assets/xml/rss.xsl" media="all"?><rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Data Science With Python (Posts about networks centrality)</title><link>https://necromuralist.github.io/data_science/</link><description></description><atom:link href="https://necromuralist.github.io/data_science/categories/networks-centrality.xml" type="application/rss+xml" rel="self"></atom:link><language>en</language><copyright>Contents © 2017 &lt;a href="mailto:necromuralist@gmail.com"&gt;necromuralist&lt;/a&gt; 
+&lt;a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/"&gt;
+&lt;img alt="Creative Commons License BY-NC-SA"
+style="border-width:0; margin-bottom:12px;"
+src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"&gt;&lt;/a&gt;</copyright><lastBuildDate>Sun, 01 Oct 2017 00:29:27 GMT</lastBuildDate><generator>Nikola (getnikola.com)</generator><docs>http://blogs.law.harvard.edu/tech/rss</docs><item><title>Node Importance</title><link>https://necromuralist.github.io/data_science/posts/node-importance/</link><dc:creator>hades</dc:creator><description>&lt;div&gt;&lt;div class="section" id="introduction"&gt;
+&lt;h2&gt;1 Introduction&lt;/h2&gt;
+&lt;p&gt;When looking at a network one of the things that might be useful is to identify the "important" nodes. Some cases where this would be useful are:&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;indentifying people who have many connections in a social network&lt;/li&gt;
+&lt;li&gt;people who are closest to other members of the network&lt;/li&gt;
+&lt;li&gt;weakest links in the network&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class="code ipython"&gt;&lt;a name="rest_code_b5f8aef86c0740b78e49adeabf10acee-1"&gt;&lt;/a&gt;&lt;span class="c1"&gt;# from pypi&lt;/span&gt;
+&lt;a name="rest_code_b5f8aef86c0740b78e49adeabf10acee-2"&gt;&lt;/a&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;networkx&lt;/span&gt;
+&lt;/pre&gt;&lt;pre class="code ipython"&gt;&lt;a name="rest_code_29798d8a337f42168094daa3ccb1def4-1"&gt;&lt;/a&gt;&lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="n"&gt;matplotlib&lt;/span&gt; &lt;span class="n"&gt;inline&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;div class="section" id="degree-centrality-undirected"&gt;
+&lt;h2&gt;2 Degree Centrality (undirected)&lt;/h2&gt;
+&lt;p&gt;Degree centrality starts with the assumption that the person with the most connections (edges) is the most important. Rather than returning a count it is the degree of the node divided by the total possible number of edges that the node could have. For the case of the directed graph the degree of the incoming vertices and outgoing vertices would likely be treated separately.&lt;/p&gt;
+&lt;div class="math"&gt;
+\begin{equation*}
+Centrality_{degree}(v) = \frac{degree_v}{|N| - 1}
+\end{equation*}
+&lt;/div&gt;
+&lt;p&gt;Where &lt;em&gt;N&lt;/em&gt; is the the graph and &lt;em&gt;v&lt;/em&gt; is the vertex (node) that we are measuring.&lt;/p&gt;
+&lt;ul class="simple"&gt;
+&lt;li&gt;A &lt;strong&gt;Degree Centrality&lt;/strong&gt; of 1 means the node is directly connected to every other node&lt;/li&gt;
+&lt;li&gt;A &lt;strong&gt;Degree Centrality&lt;/strong&gt; of 0 means the node isn't connected to any other node in the network&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class="code ipython"&gt;&lt;a name="rest_code_6527b8458713431886d144b847cce64d-1"&gt;&lt;/a&gt;&lt;span class="n"&gt;graph&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;networkx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Graph&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;a name="rest_code_6527b8458713431886d144b847cce64d-2"&gt;&lt;/a&gt;&lt;span class="n"&gt;left&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;tuple&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"AAABDE"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_6527b8458713431886d144b847cce64d-3"&gt;&lt;/a&gt;&lt;span class="n"&gt;right&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;tuple&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"BCEEEF"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_6527b8458713431886d144b847cce64d-4"&gt;&lt;/a&gt;&lt;span class="n"&gt;edges&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;zip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;left&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;right&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;a name="rest_code_6527b8458713431886d144b847cce64d-5"&gt;&lt;/a&gt;&lt;span class="n"&gt;graph&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_edges_from&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;edges&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_6527b8458713431886d144b847cce64d-6"&gt;&lt;/a&gt;&lt;span class="n"&gt;networkx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;draw&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;graph&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;with_labels&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;img alt="node_importance_graph.png" src="https://necromuralist.github.io/data_science/posts/node-importance/node_importance_graph.png"&gt;
+&lt;p&gt;In this graph there are six nodes so each node can have at most 5 links. &lt;tt class="docutils literal"&gt;E&lt;/tt&gt; has 4 so the degree centrality should be 4/5.&lt;/p&gt;
+&lt;pre class="code ipython"&gt;&lt;a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-1"&gt;&lt;/a&gt;&lt;span class="n"&gt;degree_centrality&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;networkx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;degree_centrality&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;graph&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-2"&gt;&lt;/a&gt;&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;degree_centrality&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_282f3bdf131e4920b0f67b0016282e3b-3"&gt;&lt;/a&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;degree_centrality&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"E"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;
+&lt;/pre&gt;&lt;pre class="literal-block"&gt;
+{'B': 0.4, 'E': 0.8, 'A': 0.6000000000000001, 'C': 0.2, 'D': 0.2, 'F': 0.2}
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div class="section" id="closeness-centrality"&gt;
+&lt;h2&gt;3 Closeness Centrality&lt;/h2&gt;
+&lt;p&gt;This measure assumes that the node that is closest to all the other nodes is the most important. It is the ratio of the highest possible degree for the node to the sum of the shortest paths to the other nodes.&lt;/p&gt;
+&lt;div class="math"&gt;
+\begin{equation*}
+Centrality_{closeness}(v) = \frac{|N| - 1}{\textit{sum of shortest paths of v}}
+\end{equation*}
+&lt;/div&gt;
+&lt;p&gt;Looking at &lt;tt class="docutils literal"&gt;E&lt;/tt&gt; again, you can see that the sum of its shortest paths is 6 so the &lt;strong&gt;closeness centrality&lt;/strong&gt; should be 5/6.&lt;/p&gt;
+&lt;pre class="code ipython"&gt;&lt;a name="rest_code_ca91b795007b402eae2ec376a7a5717d-1"&gt;&lt;/a&gt;&lt;span class="n"&gt;closeness_centrality&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;networkx&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;closeness_centrality&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;graph&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_ca91b795007b402eae2ec376a7a5717d-2"&gt;&lt;/a&gt;&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;closeness_centrality&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;a name="rest_code_ca91b795007b402eae2ec376a7a5717d-3"&gt;&lt;/a&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;closeness_centrality&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"E"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;6&lt;/span&gt;
+&lt;/pre&gt;&lt;pre class="literal-block"&gt;
+{'B': 0.625, 'E': 0.8333333333333334, 'A': 0.7142857142857143, 'C': 0.45454545454545453, 'D': 0.5, 'F': 0.5}
+&lt;/pre&gt;
+&lt;/div&gt;&lt;/div&gt;</description><category>networks centrality</category><guid>https://necromuralist.github.io/data_science/posts/node-importance/</guid><pubDate>Sun, 01 Oct 2017 00:23:00 GMT</pubDate></item></channel></rss>
