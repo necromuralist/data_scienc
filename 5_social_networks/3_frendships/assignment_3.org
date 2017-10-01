@@ -2,7 +2,7 @@
 
 In this assignment you will explore measures of centrality on two networks, a friendship network in Part 1, and a blog network in Part 2.
 
-* Part 1
+* Part 1 - Friendships
 
 Answer questions 1-4 using the network `G1`, a network of friendships at a university department. Each node corresponds to a person, and an edge indicates friendship. 
 
@@ -25,21 +25,27 @@ Find the degree centrality, closeness centrality, and normalized betweeness cent
 
  *This function should return a tuple of floats `(degree_centrality, closeness_centrality, betweenness_centrality)`.*
 
+#+BEGIN_SRC ipython :session centrality :results output
+DEGREE_CENTRALITY = networkx.degree_centrality(friendships)
+CLOSENESS_CENTRALITY = networkx.closeness_centrality(friendships)
+BETWEENNESS_CENTRALITY = networkx.betweenness_centrality(friendships)
+#+END_SRC
+
+#+RESULTS:
+
 #+BEGIN_SRC ipython :session centrality :results none
 def answer_one():
     """gets measures of centrality for node 100
 
     Returns:
      tuple: 
-      - float: degree of centrality
+      - float: degree centrality
       - float: closeness centrality
-      - float: nombalized betweeness centrality
+      - float: normalized betweeness centrality
     """
     NODE = 100
-    degree_of_centrality = networkx.degree_centrality(friendships)[NODE]
-    closeness_centrality = networkx.closeness_centrality(friendships)[NODE]
-    betweenness_centrality = networkx.betweenness_centrality(friendships)[NODE]
-    return degree_of_centrality, closeness_centrality, betweenness_centrality
+    return (DEGREE_CENTRALITY[NODE],
+            CLOSENESS_CENTRALITY[NODE], BETWEENNESS_CENTRALITY[NODE])
 #+END_SRC
 
 #+BEGIN_SRC ipython :session centrality :results output
@@ -49,146 +55,207 @@ print(answer_one())
 #+RESULTS:
 : (0.0026501766784452294, 0.2654784240150094, 7.142902633244772e-05)
 
-# <br>
-# #### For Questions 2, 3, and 4, use one of the covered centrality measures to rank the nodes and find the most appropriate candidate.
-# <br>
 
-# ### Question 2
-# 
-# Suppose you are employed by an online shopping website and are tasked with selecting one user in network G1 to send an online shopping voucher to. We expect that the user who receives the voucher will send it to their friends in the network.  You want the voucher to reach as many nodes as possible. The voucher can be forwarded to multiple users at the same time, but the travel distance of the voucher is limited to one step, which means if the voucher travels more than one step in this network, it is no longer valid. Apply your knowledge in network centrality to select the best candidate for the voucher. 
-# 
-# *This function should return an integer, the name of the node.*
+For Questions 2, 3, and 4, use one of the covered centrality measures to rank the nodes and find the most appropriate candidate.
 
-# In[ ]:
+#+BEGIN_SRC ipython :session centrality :results none
+def largest_node(centrality):
+    """gets the node with the best (largest score)
 
+    Returns:
+     int: name of the node with the best score
+    """
+    return list(reversed(sorted((value, node)
+                                for (node, value) in centrality.items())))[0][1]
+#+END_SRC
 
+** Question 2
+
+ Suppose you are employed by an online shopping website and are tasked with selecting one user in network G1 to send an online shopping voucher to. We expect that the user who receives the voucher will send it to their friends in the network.  You want the voucher to reach as many nodes as possible. The voucher can be forwarded to multiple users at the same time, but the travel distance of the voucher is limited to one step, which means if the voucher travels more than one step in this network, it is no longer valid. Apply your knowledge in network centrality to select the best candidate for the voucher. 
+
+*This function should return an integer, the name of the node.*
+
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_two():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """returns the node with the best degree centrality"""
+    return largest_node(DEGREE_CENTRALITY)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_two())
+#+END_SRC
 
-# ### Question 3
-# 
-# Now the limit of the voucher’s travel distance has been removed. Because the network is connected, regardless of who you pick, every node in the network will eventually receive the voucher. However, we now want to ensure that the voucher reaches the nodes in the lowest average number of hops.
-# 
-# How would you change your selection strategy? Write a function to tell us who is the best candidate in the network under this condition.
-# 
-# *This function should return an integer, the name of the node.*
+#+RESULTS:
+: 105
 
-# In[ ]:
+** Question 3
 
+Now the limit of the voucher’s travel distance has been removed. Because the network is connected, regardless of who you pick, every node in the network will eventually receive the voucher. However, we now want to ensure that the voucher reaches the nodes in the lowest average number of hops.
 
+How would you change your selection strategy? Write a function to tell us who is the best candidate in the network under this condition.
+ 
+*This function should return an integer, the name of the node.*
+
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_three():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Returns the node with the best closeness centrality"""
+    return largest_node(CLOSENESS_CENTRALITY)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_three())
+#+END_SRC
+
+#+RESULTS:
+: 23
 
 
-# ### Question 4
-# 
-# Assume the restriction on the voucher’s travel distance is still removed, but now a competitor has developed a strategy to remove a person from the network in order to disrupt the distribution of your company’s voucher. Identify the single riskiest person to be removed under your competitor’s strategy?
-# 
-# *This function should return an integer, the name of the node.*
+** Question 4
 
-# In[ ]:
+Assume the restriction on the voucher’s travel distance is still removed, but now a competitor has developed a strategy to remove a person from the network in order to disrupt the distribution of your company’s voucher. Identify the single riskiest person to be removed under your competitor’s strategy?
 
+*This function should return an integer, the name of the node.*
 
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_four():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """the node with the highest betweenness centrality"""
+    return largest_node(BETWEENNESS_CENTRALITY)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_four())
+#+END_SRC
 
-# ## Part 2
-# 
-# `G2` is a directed network of political blogs, where nodes correspond to a blog and edges correspond to links between blogs. Use your knowledge of PageRank and HITS to answer Questions 5-9.
+#+RESULTS:
+: 333
 
-# In[ ]:
+* Part 2 - Political Blogs
 
+`G2` is a directed network of political blogs, where nodes correspond to a blog and edges correspond to links between blogs. Use your knowledge of PageRank and HITS to answer Questions 5-9.
 
-G2 = nx.read_gml('blogs.gml')
+#+BEGIN_SRC ipython :session centrality :results none
+blogs = networkx.read_gml('blogs.gml')
+#+END_SRC
 
+** Question 5
 
-# ### Question 5
-# 
-# Apply the Scaled Page Rank Algorithm to this network. Find the Page Rank of node 'realclearpolitics.com' with damping value 0.85.
-# 
-# *This function should return a float.*
+ Apply the Scaled Page Rank Algorithm to this network. Find the Page Rank of node 'realclearpolitics.com' with damping value 0.85.
 
-# In[ ]:
+*This function should return a float.*
 
+#+BEGIN_SRC ipython :session centrality :results none
+PAGE_RANK = networkx.pagerank(blogs)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_five():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Page Rank of realclearpolitics.com"""
+    return PAGE_RANK['realclearpolitics.com']
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_five())
+#+END_SRC
 
-# ### Question 6
-# 
-# Apply the Scaled Page Rank Algorithm to this network with damping value 0.85. Find the 5 nodes with highest Page Rank. 
-# 
-# *This function should return a list of the top 5 blogs in desending order of Page Rank.*
+#+RESULTS:
+: 0.004636694781649093
 
-# In[ ]:
+** Question 6
 
+Apply the Scaled Page Rank Algorithm to this network with damping value 0.85. Find the 5 nodes with highest Page Rank. 
 
+*This function should return a list of the top 5 blogs in desending order of Page Rank.*
+
+#+BEGIN_SRC ipython :session centrality :results none
+def top_five(ranks):
+    """gets the top-five blogs by rank"""
+    top = list(reversed(sorted((rank, node)
+                               for node, rank in ranks.items())))[:5]
+    return [node for rank, node in top]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_six():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Top 5 nodes by page rank"""
+    return top_five(PAGE_RANK)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_six())
+#+END_SRC
 
-# ### Question 7
-# 
-# Apply the HITS Algorithm to the network to find the hub and authority scores of node 'realclearpolitics.com'. 
-# 
-# *Your result should return a tuple of floats `(hub_score, authority_score)`.*
+#+RESULTS:
+: ['dailykos.com', 'atrios.blogspot.com', 'instapundit.com', 'blogsforbush.com', 'talkingpointsmemo.com']
 
-# In[ ]:
+** Question 7
 
+Apply the HITS Algorithm to the network to find the hub and authority scores of node 'realclearpolitics.com'. 
 
+*Your result should return a tuple of floats `(hub_score, authority_score)`.*
+
+#+BEGIN_SRC ipython :session centrality :results none
+HUBS, AUTHORITIES = networkx.hits(blogs)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_seven():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """HITS score for realclearpolitics.com"""
+    return HUBS['realclearpolitics.com'], AUTHORITIES['realclearpolitics.com']
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_seven())
+#+END_SRC
 
-# ### Question 8 
-# 
-# Apply the HITS Algorithm to this network to find the 5 nodes with highest hub scores.
-# 
-# *This function should return a list of the top 5 blogs in desending order of hub scores.*
+#+RESULTS:
+: (0.0003243556140916669, 0.003918957645699851)
 
-# In[ ]:
+** Question 8 
+Apply the HITS Algorithm to this network to find the 5 nodes with highest hub scores.
 
+*This function should return a list of the top 5 blogs in desending order of hub scores.*
 
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_eight():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Top five blogs by hub scores"""
+    return top_five(HUBS)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_eight())
+#+END_SRC
+
+#+RESULTS:
+: ['politicalstrategy.org', 'madkane.com/notable.html', 'liberaloasis.com', 'stagefour.typepad.com/commonprejudice', 'bodyandsoul.typepad.com']
 
 # ### Question 9 
-# 
-# Apply the HITS Algorithm to this network to find the 5 nodes with highest authority scores.
-# 
-# *This function should return a list of the top 5 blogs in desending order of authority scores.*
 
-# In[ ]:
+Apply the HITS Algorithm to this network to find the 5 nodes with highest authority scores.
 
+ *This function should return a list of the top 5 blogs in desending order of authority scores.*
 
+#+BEGIN_SRC ipython :session centrality :results none
 def answer_nine():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """the top 5 blogs by authorities score"""
+    return top_five(AUTHORITIES)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session centrality :results output
+print(answer_nine())
+#+END_SRC
+
+#+RESULTS:
+: ['dailykos.com', 'talkingpointsmemo.com', 'atrios.blogspot.com', 'washingtonmonthly.com', 'talkleft.com']
+
+* Grader
+** Correct
+*** Function answer_one was answered correctly
+*** Function answer_two was answered correctly
+*** Function answer_three was answered correctly
+*** Function answer_four was answered correctly
+*** Function answer_five was answered correctly
+*** Function answer_six was answered correctly
+** Incorrect
+*** Function answer_seven was answered incorrectly
+*** Function answer_eight was answered incorrectly,
+*** Function answer_nine was answered incorrectly,
