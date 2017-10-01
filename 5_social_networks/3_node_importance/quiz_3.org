@@ -1,0 +1,117 @@
+#+TITLE: Quiz 3
+
+#+BEGIN_SRC ipython :session quiz_3 :results none
+import networkx
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz_3 :results none
+% matplotlib inline
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz_3 :results none
+graph = networkx.Graph()
+left = "AABCCDDEG"
+right = "BCDDEEGGF"
+edges = list(zip(left, right))
+graph.add_edges_from(edges)
+#+END_SRC
+
+* Degree Centrality of D
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+print(networkx.degree_centrality(graph)["D"])
+#+END_SRC
+
+#+RESULTS:
+: 0.6666666666666666
+
+* Closeness Centrality of G
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+print(networkx.closeness_centrality(graph)["G"])
+#+END_SRC
+
+#+RESULTS:
+: 0.6
+
+* Normalized Betweenness Centrality of G
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+print(networkx.betweenness_centrality(graph)["G"])
+#+END_SRC
+
+#+RESULTS:
+: 0.3333333333333333
+
+* Betweenness Centrality of edge G-F Without Normalization
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+print(networkx.edge_betweenness_centrality(graph, normalized=False)[("F", "G")])
+#+END_SRC
+
+#+RESULTS:
+: 6.0
+
+* Five
+
+  - the assumption of degree centrality is that important nodes have more connections
+  - we can use subsets of node-pairs to approximate betweenness centrality
+  - The closeness centrality of a node describes how far it is from the others
+
+* Six
+  - adding in-links of a node will never decrease its page-rank
+  - The authority and hub score of each node is obtained by computing multiple iterations of the HITS algorithm and both scores of most networks are convergent 
+* Maximal D page-rank
+  *wrong*
+#+BEGIN_SRC ipython :session quiz_3 :file /tmp/seven.png
+seven = networkx.DiGraph()
+left = tuple("AABCD")
+right = tuple("BCADC")
+edges = list(zip(left, right))
+seven.add_edges_from(edges)
+networkx.draw(seven , with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/seven.png]]
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+alphas = (0.5, 0.95, 0.8, 0.9)
+
+for alpha in alphas:
+    print(networkx.pagerank(seven, alpha=alpha)["D"], alpha)
+print(max((networkx.pagerank(seven, alpha=alpha)["D"], alpha) for alpha in alphas))
+#+END_SRC
+
+#+RESULTS:
+: 0.28571319580078125 0.5
+: 0.4555778814326893 0.95
+: 0.36764573423540375 0.8
+: 0.4201667251006491 0.9
+: (0.4555778814326893, 0.95)
+
+* Eight
+
+#+BEGIN_SRC ipython :session quiz_3 :results output
+eight = networkx.DiGraph()
+left = tuple("AABCD")
+right = tuple("BCCAC")
+edges = list(zip(left, right))
+eight.add_edges_from(edges)
+print(networkx.pagerank(eight))
+#+END_SRC
+
+#+RESULTS:
+: {'D': 0.037500000000000006, 'A': 0.372526246091333, 'C': 0.39415009931985023, 'B': 0.19582365458881654}
+
+Wrong Guess 0.625
+
+Wrong guess 2: 0.25
+* Nine
+
+Guess 0.57, 0.09
+
+* Ten
+  * wrong *
+  - node D's basic page rank at k=1 is always zero
+  - At k (k >= 1) node A's basic page rank is the same as node C's basic page rank at step k-1
