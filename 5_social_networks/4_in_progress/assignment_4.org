@@ -12,6 +12,10 @@ import numpy
 import pandas
 #+END_SRC
 
+#+BEGIN_SRC ipython :session randomgraphs :results none
+% matplotlib inline
+#+END_SRC
+
 * Part 1 - Random Graph Identification
  
 For the first part of this assignment you will analyze randomly generated graphs and determine which algorithm created them.
@@ -40,54 +44,104 @@ Analyze each of the 5 graphs and determine which of the three algorithms generat
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
 def graph_identification():
-    return # Your Answer Here
+    """Identifies the type of graph each of the graphs is
+
+    Returns:
+     list: string identifiers for the type of graph
+    """
+    graph_types = []
+    for graph in part_one_graphs:
+        path = networkx.average_shortest_path_length(graph)
+        coefficient = networkx.average_clustering(graph)
+        if path > 6:
+            if coefficient < 0.5:
+                graph_types.append("SW_L")
+            else:
+                raise Exception("unexpected type")
+        else:
+            if coefficient < 0.5:
+                graph_types.append("PA")
+            else:
+                graph_types.append("SW_H")
+    return graph_types
 #+END_SRC
 
-# ---
-# 
-# ## Part 2 - Company Emails
-# 
-# For the second part of this assignment you will be workking with a company's email network where each node corresponds to a person at the company, and each edge indicates that at least one email has been sent between two people.
-# 
-# The network also contains the node attributes `Department` and `ManagmentSalary`.
-# 
-# `Department` indicates the department in the company which the person belongs to, and `ManagmentSalary` indicates whether that person is receiving a managment position salary.
+* Part 2 - Company Emails
 
-# In[ ]:
+For the second part of this assignment you will be working with a company's email network where each node corresponds to a person at the company, and each edge indicates that at least one email has been sent between two people.
 
+The network also contains the node attributes `Department` and `ManagementSalary`.
 
-G = nx.read_gpickle('email_prediction.txt')
+`Department` indicates the department in the company which the person belongs to, and `ManagementSalary` indicates whether that person is receiving a managment position salary.
 
-print(nx.info(G))
+#+BEGIN_SRC ipython :session randomgraphs :results output
+email = networkx.read_gpickle('email_prediction.txt')
+print(networkx.info(email))
+#+END_SRC
 
+#+RESULTS:
+: Name: 
+: Type: Graph
+: Number of nodes: 1005
+: Number of edges: 16706
+: Average degree:  33.2458
 
-# ### Part 2A - Salary Prediction
-# 
-# Using network `G`, identify the people in the network with missing values for the node attribute `ManagementSalary` and predict whether or not these individuals are receiving a managment position salary.
-# 
-# To accomplish this, you will need to create a matrix of node features using networkx, train a sklearn classifier on nodes that have `ManagementSalary` data, and predict a probability of the node receiving a managment salary for nodes where `ManagementSalary` is missing.
-# 
-# 
-# 
-# Your predictions will need to be given as the probability that the corresponding employee is receiving a managment position salary.
-# 
-# The evaluation metric for this assignment is the Area Under the ROC Curve (AUC).
-# 
-# Your grade will be based on the AUC score computed for your classifier. A model which with an AUC of 0.75 or higher will receive full points.
-# 
-# Using your trained classifier, return a series of length 252 with the data being the probability of receiving managment salary, and the index being the node id.
-# 
-#     Example:
-#     
-#         1       1.0
-#         2       0.0
-#         5       0.8
-#         8       1.0
-#             ...
-#         996     0.7
-#         1000    0.5
-#         1001    0.0
-#         Length: 252, dtype: float64
+** Part 2A - Salary Prediction
+
+Using network `email`, identify the people in the network with missing values for the node attribute `ManagementSalary` and predict whether or not these individuals are receiving a managment position salary.
+
+To accomplish this, you will need to create a matrix of node features using networkx, train a sklearn classifier on nodes that have `ManagementSalary` data, and predict a probability of the node receiving a managment salary for nodes where `ManagementSalary` is missing.
+
+Your predictions will need to be given as the probability that the corresponding employee is receiving a managment position salary.
+
+The evaluation metric for this assignment is the Area Under the ROC Curve (AUC).
+
+Your grade will be based on the AUC score computed for your classifier. A model which with an AUC of 0.75 or higher will receive full points.
+
+Using your trained classifier, return a series of length 252 with the data being the probability of receiving managment salary, and the index being the node id.
+ 
+#+BEGIN_EXAMPLE  
+      1       1.0
+      2       0.0
+      5       0.8
+      8       1.0
+          ...
+      996     0.7
+      1000    0.5
+      1001    0.0
+      Length: 252, dtype: float64
+#+END_EXAMPLE
+
+#+BEGIN_SRC ipython :session randomgraphs :results raw
+data = pandas.DataFrame(index=email.nodes())
+data["department"] = pandas.Series(networkx.get_node_attributes(email, "Department"))
+data["management"] = pandas.Series(networkx.get_node_attributes(email, "ManagementSalary"))
+data.head()
+#+END_SRC
+
+#+RESULTS:
+   department  management
+0           1         0.0
+1           1         NaN
+2          21         NaN
+3          21         1.0
+4          21         1.0
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(data.management.unique())
+print(data.department.unique())
+#+END_SRC
+
+#+RESULTS:
+: [  0.  nan   1.]
+: [ 1 21 25 14  9 26  4 17 34 11  5 10 36 37  7 22  8 15  3 29 20 16 38 27 13
+:   6  0 28  2 40 35 23 19 24 32 31 39 12 30 41 18 33]
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+missing_management = data[data.management.isnull()]
+training = data[data.management.notnull()]
+assert len(missing_management) + len(training) == len(data)
+#+END_SRC
 
 # In[ ]:
 

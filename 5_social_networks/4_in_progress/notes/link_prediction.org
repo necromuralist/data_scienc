@@ -1,0 +1,47 @@
+#+TITLE: Link Prediction
+
+* Imports
+#+BEGIN_SRC ipython :session linkprediction :results none
+import networkx
+#+END_SRC
+
+#+BEGIN_SRC ipython :session linkprediction :results none
+% matplotlib inline
+#+END_SRC
+
+* The Sample Graph
+
+#+BEGIN_SRC ipython :session linkprediction :results none
+left = tuple("AAABBCCEEFGG")
+right = tuple('BDECDDFFGGHI')
+graph = networkx.Graph()
+graph.add_edges_from(list(zip(left, right)))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session linkprediction :file /tmp/link_prediction_graph.png
+networkx.draw(graph, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/link_prediction_graph.png]]
+* Creating the Communities
+
+  networkx expects you to label the communities for it.
+
+#+BEGIN_SRC ipython :session linkprediction :results none
+for node in "ABCD":
+    graph.node[node]['community'] = 0
+
+for node in "EFGHI":
+    graph.node[node]['community'] = 1
+#+END_SRC
+
+* Community Structure Score
+  The community structure score is the number of common-neighbors two nodes share plus the number of common neighbors that are in the same community.
+
+#+BEGIN_SRC ipython :session linkprediction :results output
+print(list(networkx.cn_soundarajan_hopcroft(graph, [("I", "H")])))
+#+END_SRC
+
+#+RESULTS:
+: [('I', 'H', 2)]

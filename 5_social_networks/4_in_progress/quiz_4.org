@@ -1,0 +1,204 @@
+#+TITLE: Quiz 4
+
+* Imports
+
+#+BEGIN_SRC ipython :session quiz :results none
+# python standard library
+from fractions import Fraction
+
+# pypi
+import networkx
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz :results none
+% matplotlib inline
+#+END_SRC
+
+* Question One
+
+#+BEGIN_SRC ipython :session quiz :results none
+left = tuple("AAABBBCCDE")
+right = tuple("BCFCDEEFEF")
+graph = networkx.Graph()
+graph.add_edges_from(list(zip(left, right)))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz :file /tmp/quiz_1.png
+networkx.draw(graph, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/quiz_1.png]]
+Suppose /P(k)/ denotes the degree distribution of the network. What is the value of P(2) + P(3)?
+
+D has degree 2 so P(2) is 1/6. A and F have degree 3 so P(3) is 2/6 and P(2) + P(3) = 1/2.
+
+#+BEGIN_SRC ipython :session quiz :results output
+nodes = len(graph)
+p_2 = Fraction(len([n for n in graph if graph.degree(n) == 2]), nodes)
+p_3 = Fraction(len([n for n in graph if graph.degree(n) == 3]), nodes)
+print(p_2 + p_3)
+#+END_SRC
+
+#+RESULTS:
+: 1/2
+
+* Question Two
+
+#+BEGIN_SRC ipython :session quiz :results none
+left = tuple("AAABBCDE")
+right = tuple("BCDACAEC")
+graph_two = networkx.DiGraph()
+graph_two.add_edges_from(list(zip(left, right)))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz :file /tmp/quiz_2.png
+networkx.draw(graph_two, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/quiz_2.png]]
+Let /P(k)/ denote the in-degree distribution of the network. What value of k gives the highest value of /P(k)/.
+
+#+BEGIN_SRC ipython :session quiz :results output
+def in_degree_distribution(graph, degree):
+    """Gets the probability for the graph degree
+
+    Args:
+     graph (DiGraph): graph to inspect
+     degree (int): degree to check
+
+    Returns:
+     Fraction: fraction of nodes with the degree
+    """
+    return Fraction(sum((1 for n in graph if graph.in_degree(n)==degree)), len(graph))
+
+probability, degree = max((in_degree_distribution(graph_two, degree), degree) for degree in range(4))
+print("Degree: {} Probability: {}".format(degree, probability))
+#+END_SRC
+
+#+RESULTS:
+: Degree: 1 Probability: 3/5
+
+* Question Three
+
+  - [ ] Networks with a power law distribution have many nodes with rage degree and a few nodes with very small degree
+  - [X] If we draw a power law distribution on a log-log scale, the distribution will look like a straight line
+  - [ ] In the Preferential Attachment Model, a new node always connects to the node with the highest in-degree
+  - [X] The Preferential Attachment Model generates a network with a power law distribution
+
+* Question Four
+  *This was marked wrong.*
+
+  - [ ] The Preferential Attachment Model generates a small-world network
+  - [X] Some small-world networks have high local clustering coefficient and small average shortest path
+  - [X] In the small-world model starting with k nearest neighbors, increasing the rewiring probability /p/ genterally decreases both the average clustering coefficient and average shortest path
+  - [X] The degree distribution of small-world networks follows power-law distribution
+  - [ ] Small-world networks are always connected
+
+* Question Five
+  *This was marked wrong*
+  Suppose we want to generate several small-world networks with k-nearest neighbors and rewiring probability of /p/. If /p/ remains the same and we increase /k/, which best describes the variation of average local clustering coefficient and average shortest path.
+
+  - [X] both will increase
+  - [ ] both will decrease
+  - [ ] local clustering will increase and shortest path will decrease
+  - [ ] local clustering will decrease and shortest path will increase
+
+Adding neighbors improves clustering so that should go up. Rewiring is what makes the paths shorter so that should increase (make it worse), since we aren't adjusting /p/.
+
+* Question Six
+
+#+BEGIN_SRC ipython :session quiz :results none
+left = tuple("AAABCDDDEF")
+right = tuple("CDEDGEGHHH")
+graph_six = networkx.Graph()
+graph_six.add_edges_from(list(zip(left, right)))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz :file /tmp/quiz_6.png
+networkx.draw(graph_six, with_labels=True)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/quiz_6.png]]
+
+Suppose we want to apply the common neighbors measure to add an edge from node H. Which is the most probable node to connect to H?
+
+#+BEGIN_SRC ipython :session quiz :results output
+for candidate in list("ABCG"):
+    print("{}: {}".format(candidate, list(networkx.common_neighbors(graph_six, "H", candidate))))
+#+END_SRC
+
+#+RESULTS:
+: A: ['D', 'E']
+: B: ['D']
+: C: []
+: G: ['D']
+
+It looks like /A/ is the most probable node.
+
+* Question Seven
+  Using the same network as in question six, what is the Jaccard coefficent of nodes /D/ and /C/?
+
+#+BEGIN_SRC ipython :session quiz :results output
+print(list(networkx.jaccard_coefficient(graph_six, [("D", "C")])))
+#+END_SRC
+
+#+RESULTS:
+: [('D', 'C', 0.4)]
+
+* Question Eight
+  Using the same graph again, if we apply Resqurce Allocation to predict the new edges, what is the value of the Resource Allocation index of nodes /C/ and /D/?
+
+#+BEGIN_SRC ipython :session quiz :results output
+print(list(networkx.resource_allocation_index(graph_six, [("C", "D")])))
+#+END_SRC
+
+#+RESULTS:
+: [('C', 'D', 0.8333333333333333)]
+
+* Question Nine
+  Using the same graph, what is the preferential attachment score for nodes /C/ and /D/?
+
+#+BEGIN_SRC ipython :session quiz :results output
+print(list(networkx.preferential_attachment(graph_six, [("C", "D")])))
+#+END_SRC
+
+#+RESULTS:
+: [('C', 'D', 10)]
+
+* Question Ten
+
+  Assume the previous graph had two communities - /{A, B, C, D, G}/ and /{E, F, H}/. Which of the following statements are true?
+
+  - [ ] The Common Neighbor Soundarajan-Hopcroft score of node C and node D is 2
+  - [X] The Common Neighbor Soundarajan-Hopcroft score of node A and node G is 4
+  - [ ] The Resource Allocation Soundarajan-Hopcroft score of node E and node F is 0
+  - [X] The Resource Allocation Soundarajan-Hopcroft score of node A and node G is 0.7
+
+#+BEGIN_SRC ipython :session quiz :results none
+for node in "ABCDG":
+    graph_six.node[node]["community"] = 0
+
+for node in "EFH":
+    graph_six.node[node]["community"] = 1
+#+END_SRC
+
+#+BEGIN_SRC ipython :session quiz :results output
+for pair in (('C', 'D'), ("A", "G")):    
+    print(list(networkx.cn_soundarajan_hopcroft(graph_six, [pair])))
+#+END_SRC
+
+#+RESULTS:
+: [('C', 'D', 4)]
+: [('A', 'G', 4)]
+
+#+BEGIN_SRC ipython :session quiz :results output
+for pair in (("E", "F"), ("A", "G")):
+    print(list(networkx.ra_index_soundarajan_hopcroft(graph_six, [pair])))
+#+END_SRC
+
+#+RESULTS:
+: [('E', 'F', 0.3333333333333333)]
+: [('A', 'G', 0.7)]
