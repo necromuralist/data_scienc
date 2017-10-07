@@ -4,6 +4,7 @@
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
 # python standard library
+import os
 import pickle
 
 # from pypi
@@ -20,7 +21,7 @@ import pandas
  
 For the first part of this assignment you will analyze randomly generated graphs and determine which algorithm created them.
 
-* Load the data
+** Load the data
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
 part_one_graphs = pickle.load(open('A4_graphs','rb'))
@@ -42,6 +43,7 @@ Analyze each of the 5 graphs and determine which of the three algorithms generat
 
 *The `graph_identification` function should return a list of length 5 where each element in the list is either `'PA'`, `'SW_L'`, or `'SW_H'`.*
 
+** Graph Identification
 #+BEGIN_SRC ipython :session randomgraphs :results none
 def graph_identification():
     """Identifies the type of graph each of the graphs is
@@ -112,20 +114,42 @@ Using your trained classifier, return a series of length 252 with the data being
       Length: 252, dtype: float64
 #+END_EXAMPLE
 
-#+BEGIN_SRC ipython :session randomgraphs :results raw
-data = pandas.DataFrame(index=email.nodes())
-data["department"] = pandas.Series(networkx.get_node_attributes(email, "Department"))
-data["management"] = pandas.Series(networkx.get_node_attributes(email, "ManagementSalary"))
-data.head()
+*** The Data Frame
+#+BEGIN_SRC ipython :session randomgraphs :results output
+if not os.path.isfile("email_data.h5"):
+    data = pandas.DataFrame(index=email.nodes())
+    data["department"] = pandas.Series(networkx.get_node_attributes(email, "Department"))
+    data["management"] = pandas.Series(networkx.get_node_attributes(email, "ManagementSalary"))
+    data["clustering"] = pandas.Series(networkx.clustering(email))
+    data["degree"] = pandas.Series(email.degree())
+    data["degree_centrality"] = pandas.Series(networkx.degree_centrality(email))
+    data["closeness_centrality"] = pandas.Series(networkx.closeness_centrality(email))
+    data["betweenness_centrality"] = pandas.Series(networkx.betweenness_centrality(email))
+    data["pagerank"] = pandas.Series(networkx.pagerank(email))
+    _, authority = networkx.hits(email)
+    data["authority"] = pandas.Series(authority)
+    data.to_hdf("email_data.h5","df" )
+else:
+    data = pandas.read_hdf('email_data.h5', "df")
+print(data.head())    
 #+END_SRC
 
 #+RESULTS:
-   department  management
-0           1         0.0
-1           1         NaN
-2          21         NaN
-3          21         1.0
-4          21         1.0
+#+begin_example
+   department  management  clustering  degree  degree_centrality  \
+0           1         0.0    0.276423      44           0.043825   
+1           1         NaN    0.265306      52           0.051793   
+2          21         NaN    0.297803      95           0.094622   
+3          21         1.0    0.384910      71           0.070717   
+4          21         1.0    0.318691      96           0.095618   
+
+   closeness_centrality  betweenness_centrality  pagerank  authority  
+0              0.421991                0.001124  0.001224   0.000944  
+1              0.422360                0.001195  0.001426   0.001472  
+2              0.461490                0.006570  0.002605   0.002680  
+3              0.441663                0.001654  0.001833   0.002369  
+4              0.462152                0.005547  0.002526   0.003055  
+#+end_example
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
 print(data.management.unique())
@@ -136,6 +160,31 @@ print(data.department.unique())
 : [  0.  nan   1.]
 : [ 1 21 25 14  9 26  4 17 34 11  5 10 36 37  7 22  8 15  3 29 20 16 38 27 13
 :   6  0 28  2 40 35 23 19 24 32 31 39 12 30 41 18 33]
+
+*** Adding Features
+**** Clustering
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+data["clustering"] = pandas.Series(networkx.clustering(email))
+#+END_SRC
+
+**** Degree
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+data["degree"] = pandas.Series(email.degree())
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(data.head())
+#+END_SRC
+
+#+RESULTS:
+:    department  management  degree  clustering
+: 0           1         0.0      44    0.276423
+: 1           1         NaN      52    0.265306
+: 2          21         NaN      95    0.297803
+: 3          21         1.0      71    0.384910
+: 4          21         1.0      96    0.318691
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
 missing_management = data[data.management.isnull()]
@@ -198,4 +247,4 @@ def new_connections_predictions():
     # Your Code Here
     
     return # Your Answer Here
-
+    

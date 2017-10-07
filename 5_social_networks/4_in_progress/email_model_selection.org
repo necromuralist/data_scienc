@@ -1,0 +1,26 @@
+#+TITLE: Selecting the Email Management Classification Model
+
+* Imports
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+# pypi
+import pandas
+#+END_SRC
+
+* The Data
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+data = pandas.read_hdf("email_data.h5", "df")
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(data.head())
+#+END_SRC
+
+#+RESULTS:
+:    department  management
+: 0           1         0.0
+: 1           1         NaN
+: 2          21         NaN
+: 3          21         1.0
+: 4          21         1.0
