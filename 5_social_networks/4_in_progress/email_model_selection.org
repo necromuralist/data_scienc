@@ -4,23 +4,500 @@
 
 #+BEGIN_SRC ipython :session emailmodel :results none
 # pypi
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    RandomForestClassifier,
+    )
+from sklearn.feature_selection import (
+    RFECV,
+)
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.model_selection import (
+    GridSearchCV,
+    StratifiedKFold,
+    train_test_split,
+    )
+
+from sklearn.dummy import DummyClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+import matplotlib.pyplot as pyplot
+import mglearn
+import numpy
 import pandas
+import seaborn
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+% matplotlib inline
+seaborn.set_style("whitegrid")
 #+END_SRC
 
 * The Data
 
 #+BEGIN_SRC ipython :session emailmodel :results none
 data = pandas.read_hdf("email_data.h5", "df")
+cleaned_data = data[pandas.notnull(data.management)]
 #+END_SRC
 
 #+BEGIN_SRC ipython :session emailmodel :results output
-print(data.head())
+print(cleaned_data.head())
 #+END_SRC
 
 #+RESULTS:
-:    department  management
-: 0           1         0.0
-: 1           1         NaN
-: 2          21         NaN
-: 3          21         1.0
-: 4          21         1.0
+#+begin_example
+   department  management  clustering  degree  degree_centrality  \
+0           1         0.0    0.276423      44           0.043825   
+3          21         1.0    0.384910      71           0.070717   
+4          21         1.0    0.318691      96           0.095618   
+6          25         1.0    0.155183     115           0.114542   
+7          14         0.0    0.287785      72           0.071713   
+
+   closeness_centrality  betweenness_centrality  pagerank  authority  
+0              0.421991                0.001124  0.001224   0.000944  
+3              0.441663                0.001654  0.001833   0.002369  
+4              0.462152                0.005547  0.002526   0.003055  
+6              0.475805                0.012387  0.003146   0.002554  
+7              0.420156                0.002818  0.002002   0.001155  
+#+end_example
+
+For evaluation purposes I'll use the traditional train-test split.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+x_data = cleaned_data[["department", "clustering", "degree",
+                       "degree_centrality", "closeness_centrality",
+                       "betweenness_centrality", 'pagerank', 'authority']]
+
+y_data = cleaned_data.management
+
+print(x_data.head())
+print(y_data.head())
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+   department  clustering  degree  degree_centrality  closeness_centrality  \
+0           1    0.276423      44           0.043825              0.421991   
+3          21    0.384910      71           0.070717              0.441663   
+4          21    0.318691      96           0.095618              0.462152   
+6          25    0.155183     115           0.114542              0.475805   
+7          14    0.287785      72           0.071713              0.420156   
+
+   betweenness_centrality  pagerank  authority  
+0                0.001124  0.001224   0.000944  
+3                0.001654  0.001833   0.002369  
+4                0.005547  0.002526   0.003055  
+6                0.012387  0.003146   0.002554  
+7                0.002818  0.002002   0.001155  
+0    0.0
+3    1.0
+4    1.0
+6    1.0
+7    0.0
+Name: management, dtype: float64
+#+end_example
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(y_data.value_counts())
+#+END_SRC
+
+#+RESULTS:
+: 0.0    634
+: 1.0    119
+: Name: management, dtype: int64
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/management_bar.png
+seaborn.countplot(x='management', data=cleaned_data)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/management_bar.png]]
+
+It looks like the management data is unbalanced, so we'll have to do a stratified split.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, stratify=y_data)
+print(x_train.shape)
+print(y_test.shape)
+#+END_SRC
+
+#+RESULTS:
+: (564, 8)
+: (189,)
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/management_train.png
+seaborn.countplot(y_train)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/management_train.png]]
+
+Looks close enough for government work.
+
+* Dummy Classifier
+  As a baseline I'll use a [[http://scikit-learn.org/stable/modules/model_evaluation.html#dummy-estimators][Dummy Classifier]] which uses a simple rule rather than the input data to make predictions.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+parameter_grid = dict(strategy=["stratified", 'most_frequent', 'prior', 'uniform'])
+#+END_SRC
+
+Now we'll do a grid search.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+grid_search = GridSearchCV(DummyClassifier(), parameter_grid, cv=10, scoring="roc_auc")
+grid_search.fit(x_train, y_train)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(grid_search.best_params_)
+print(grid_search.score(x_test, y_test))
+#+END_SRC
+
+#+RESULTS:
+: {'strategy': 'most_frequent'}
+: 0.5
+
+It looks like it chose the *Most Frequent* strategy, which should predict that the instances are all non-managers. Our baseline AUC score is 0.5.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+results = pandas.DataFrame(grid_search.cv_results_)
+print(results.head(1))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+   mean_fit_time  mean_score_time  mean_test_score  mean_train_score  \
+0       0.000777         0.002773         0.499459          0.488831   
+
+  param_strategy                      params  rank_test_score  \
+0     stratified  {'strategy': 'stratified'}                4   
+
+   split0_test_score  split0_train_score  split1_test_score       ...         \
+0           0.465278            0.496546           0.569444       ...          
+
+   split7_test_score  split7_train_score  split8_test_score  \
+0           0.446809            0.461974           0.470449   
+
+   split8_train_score  split9_test_score  split9_train_score  std_fit_time  \
+0            0.515888           0.519947            0.510817      0.000064   
+
+   std_score_time  std_test_score  std_train_score  
+0        0.006225        0.050044          0.01681  
+
+[1 rows x 31 columns]
+#+end_example
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/dummy_scores.png
+figure = pyplot.figure()
+axe = figure.gca()
+strategies = parameter_grid["strategy"]
+x = pyplot.xticks(list(range(len(strategies))), strategies)
+axe.plot(range(len(strategies)), results.mean_test_score)
+axe.set_title("Dummy Classifier Strategy Vs AUC")
+axe.set_xlabel("strategy")
+axe.set_ylabel("AUC Score")
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/dummy_scores.png]]
+
+So it looks like all the strategies except *stratified* did the same - and even the stratified did basically the same if you round it off.
+
+* Feature Selection
+  I'm going to need to do some feature reduction, but figuring out what is important and what isn't is something I'm going to have to leave to the machine. I'm going to assume that the features thrown out by logistic regression with l1 penalization are unimportant. The =SelectFromModel= doesn't seem to work with numeric thresholds for some reason so I'm going to roll it by hand.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+logistic_model = LogisticRegressionCV(penalty='l1',
+                                      solver='liblinear', scoring="roc_auc")
+logistic_model.fit(x_train, y_train)
+# keep the positive data
+x_train_positive = x_train[x_train.columns[logistic_model.coef_[0] > 0]]
+x_test_positive = x_test[x_train.columns[logistic_model.coef_[0] > 0]]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(logistic_model.score(x_test, y_test))
+#+END_SRC
+
+#+RESULTS:
+: 0.89417989418
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(x_train.shape)
+print(x_train_positive.shape)
+print(x_train_positive.columns)
+#+END_SRC
+
+#+RESULTS:
+: (564, 8)
+: (564, 3)
+: Index(['clustering', 'closeness_centrality', 'betweenness_centrality'], dtype='object')
+
+That removed more than I thought it would. As a check I'll use a tree-based version.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+trees = ExtraTreesClassifier()
+eliminator = RFECV(estimator=trees, cv=StratifiedKFold(10), scoring="roc_auc")
+eliminator.fit(x_train, y_train)
+x_train_trees = eliminator.transform(x_train)
+x_test_trees = eliminator.transform(x_test)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(x_train_trees.shape)
+print(eliminator.ranking_)
+#+END_SRC
+
+#+RESULTS:
+: (564, 7)
+: [2 1 1 1 1 1 1 1]
+
+This only eliminated one column and since it returns a numpy array I don't really know which one it was. If I understand the 'ranking' correctly the 'department' was the only one removed (since it was the first column and that is the only ranking that isn't a 1).
+
+*warning* this seem to change every time you run it - the randomness changes it. Only the elimination of the first column seems to do as well as not running it at all.
+
+* Fit and Display
+  This is a convenience function so I can fit and display the scores for the models.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+def fit_and_display(model, identifier):
+    """Fit and display the scores
+
+    Args:
+     model: The instantiated model to fit
+     identifier (str): something to output at the beginning
+    """
+    print(identifier)
+    print("=" * len(identifier))
+    model.fit(x_train, y_train)
+    print("\nX-train")
+    print("Score: {:.2f}".format(model.score(x_test, y_test)))
+    print("\nX-Train Positive")
+    model.fit(x_train_positive, y_train)
+    print("Score: {:.2f}".format(model.score(x_test_positive, y_test)))
+    print("\nX-Train Trees")
+    model.fit(x_train_trees, y_train)
+    print("Score: {:.2f}".format(model.score(x_test_trees, y_test)))
+    return
+#+END_SRC  
+
+* Logistic Regression
+  I've already run the Logistic Regression using a 'l1' but I'll try it again with 'l2' to see if it improved.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+model = LogisticRegressionCV(scoring="roc_auc")
+fit_and_display(model, "LogisticRegression")
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+LogisticRegression
+==================
+
+X-train
+Score: 0.87
+
+X-Train Positive
+Score: 0.87
+
+X-Train Trees
+Score: 0.87
+#+end_example
+
+The first time I ran this the RFECV training data did a little better (0.89) but when I re-ran it it did worse, even though it seemed to eliminate the same columns. It looks like the random state makes a big difference.
+
+* Random Forests
+  I'll try a [[http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html][Random Forest]] classifier next.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+parameter_grid = dict(n_estimators=range(10, 100, 10))
+search = GridSearchCV(RandomForestClassifier(), parameter_grid,
+                      cv=StratifiedKFold(10), scoring="roc_auc")
+fit_and_display(search, "Random Forest")
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+Random Forest
+=============
+
+X-train
+Score: 0.93
+
+X-Train Positive
+Score: 0.91
+
+X-Train Trees
+Score: 0.95
+#+end_example
+
+This seems to have done much better than the logistic regression did. My logistic-regression feature reduction seems to hurt rather than help.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+class RandomForest(object):
+    """trains a random forest on the x-test-trees set
+
+    Args:
+     start (int): first n-estimators value to use
+     stop (int): last n-estimators value (minus step)
+     step (int): amount to increment estimators
+     folds (int): Cross-validation-folds to usen
+
+    Returns:
+     GridSearchCV: grid-search with the best estimator
+    """
+
+    def __init__(self, start, stop, step, folds=10):
+        self.start = start
+        self.stop = stop
+        self.step = step
+        self.folds = folds
+        self._search = None
+        self._parameter_grid = None
+        return
+
+    @property
+    def parameter_grid(self):
+        """dict of the number of estimators to use"""
+        if self._parameter_grid is None:
+            self._parameter_grid = dict(n_estimators=list(range(self.start,
+                                                                self.stop,
+                                                                self.step)))
+        return self._parameter_grid
+
+    @property
+    def search(self):
+        """grid-search cv object"""
+        if self._search is None:
+            self._search = GridSearchCV(RandomForestClassifier(),
+                                        self.parameter_grid,
+                                        cv=StratifiedKFold(self.folds),
+                                        scoring="roc_auc")
+        return self._search    
+
+    def fit(self):
+        """fits the model to the tree-based reduced-feature data"""
+        self.search.fit(x_train_trees, y_train)
+        print(self.search.score(x_test_trees, y_test))
+        print(self.search.best_estimator_.feature_importances_)
+        print(self.search.best_params_)
+        return
+
+    def plot(self):
+        """Plots estimators vs AUC scores"""
+        figure = pyplot.figure()
+        axe = figure.gca()
+        axe.plot(self.parameter_grid["n_estimators"],
+                 self.search.cv_results_["mean_test_score"])
+        axe.set_title("Estimator Count vs AUC")
+        axe.set_xlabel("Number of estimators (trees)")
+        axe.set_ylabel("Mean AUC Score")
+        return
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+search = RandomForest(10, 100, 10)
+search.fit()
+#+END_SRC
+
+#+RESULTS:
+: 0.912578616352
+: [ 0.14581867  0.15474293  0.10641037  0.11915329  0.22184089  0.11740134
+:   0.1346325 ]
+: {'n_estimators': 50}
+
+Not a lot of variance in the importance of the features.
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/random_forest.png
+search.plot()
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/random_forest.png]]
+
+Would things get better with more trees?
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+search = RandomForest(150, 250, 10)
+search.fit()
+#+END_SRC
+
+#+RESULTS:
+: 0.948846960168
+: [ 0.1512465   0.14279309  0.12013834  0.11705839  0.21756113  0.13122099
+:   0.11998157]
+: {'n_estimators': 240}
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/random_forest_2.png
+search.plot()
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/random_forest_2.png]]
+
+In this case the test-score was better, although the training scores don't look much better. I guess it's the randomness coming into play again. I'll try a long run instead.
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+search = RandomForest(10, 500, 10)
+search.fit()
+#+END_SRC
+
+#+RESULTS:
+: 0.946016771488
+: [ 0.1488974   0.12609269  0.12240392  0.12681712  0.20426952  0.14545715
+:   0.1260622 ]
+: {'n_estimators': 300}
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/random_forest_long.png
+search.plot()
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/random_forest_long.png]]
+
+The test-score for the best estimator is actually a little worse than it was for the previous case, although it's qute a small difference.
+
+* K Nearest Neighbors
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+parameters = dict(n_neighbors=range(10, 20),
+                  weights=["uniform", "distance"],
+                  p=[1, 2],
+                  leaf_size=range(10, 50, 10))
+
+search = GridSearchCV(KNeighborsClassifier(), parameters, scoring="roc_auc")
+search.fit(x_train_trees, y_train)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(search.score(x_test_trees, y_test))
+print(search.best_params_)
+#+END_SRC
+
+#+RESULTS:
+: 0.820125786164
+: {'n_neighbors': 17, 'leaf_size': 10, 'p': 1, 'weights': 'uniform'}
+
+* Support Vector Classifier (SVC)
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+parameters = dict(C=numpy.arange(.5, 2, 0.5), gamma=range(1, 10, 1))
+search = GridSearchCV(SVC(), parameters, scoring='roc_auc')
+search.fit(x_train_trees, y_train)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+print(search.score(x_test_trees, y_test))
+print(search.best_params_)
+#+END_SRC
+
+#+RESULTS:
+: 0.736477987421
+: {'C': 1}
+
+* Classifiers to Consider
+  - Gradient Boosting Classifier
+  - Naive Bayes
+  - Voting Classifier
+  - KNeighbors
+  - SVC
