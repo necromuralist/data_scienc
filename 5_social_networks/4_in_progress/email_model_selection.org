@@ -187,78 +187,8 @@ seaborn.countplot(y_train)
 
 Looks close enough for government work.
 
-* Dummy Classifier
-  As a baseline I'll use a [[http://scikit-learn.org/stable/modules/model_evaluation.html#dummy-estimators][Dummy Classifier]] which uses a simple rule rather than the input data to make predictions.
-
-#+BEGIN_SRC ipython :session emailmodel :results none
-parameter_grid = dict(strategy=["stratified", 'most_frequent', 'prior', 'uniform'])
-#+END_SRC
-
-Now we'll do a grid search.
-
-#+BEGIN_SRC ipython :session emailmodel :results none
-grid_search = GridSearchCV(DummyClassifier(), parameter_grid,
-                           cv=StratifiedKFold(10), scoring="roc_auc")
-grid_search.fit(x_train, y_train)
-#+END_SRC
-
-#+BEGIN_SRC ipython :session emailmodel :results output
-BASELINE = grid_search.score(x_test, y_test)
-print(grid_search.best_params_)
-print(BASELINE)
-#+END_SRC
-
-#+RESULTS:
-: {'strategy': 'stratified'}
-: 0.551572327044
-
-It looks like it chose the *stratified* strategy, which should predict that the instances are all non-managers. Our baseline AUC score is 0.5.
-
-#+BEGIN_SRC ipython :session emailmodel :results output
-results = pandas.DataFrame(grid_search.cv_results_)
-print(results.head(1))
-#+END_SRC
-
-#+RESULTS:
-#+begin_example
-   mean_fit_time  mean_score_time  mean_test_score  mean_train_score  \
-0       0.002192         0.001767         0.508104          0.515411   
-
-  param_strategy                      params  rank_test_score  \
-0     stratified  {'strategy': 'stratified'}                1   
-
-   split0_test_score  split0_train_score  split1_test_score       ...         \
-0           0.538194            0.486783           0.482639       ...          
-
-   split7_test_score  split7_train_score  split8_test_score  \
-0           0.414894            0.506484           0.515366   
-
-   split8_train_score  split9_test_score  split9_train_score  std_fit_time  \
-0            0.516297           0.529255            0.526999      0.000314   
-
-   std_score_time  std_test_score  std_train_score  
-0        0.000463        0.055611         0.019322  
-
-[1 rows x 31 columns]
-#+end_example
-
-#+BEGIN_SRC ipython :session emailmodel :file /tmp/dummy_scores.png
-figure = pyplot.figure()
-axe = figure.gca()
-strategies = parameter_grid["strategy"]
-x = pyplot.xticks(list(range(len(strategies))), strategies)
-axe.plot(range(len(strategies)), results.mean_test_score)
-axe.set_title("Dummy Classifier Strategy Vs AUC")
-axe.set_xlabel("strategy")
-axe.set_ylabel("AUC Score")
-#+END_SRC
-
-#+RESULTS:
-[[file:/tmp/dummy_scores.png]]
-
-So it looks like all the strategies except *stratified* did the same - and even the stratified did basically the same if you round it off.
-
 * Standardizing the Data
+  The linear models expect the data to be standardized, so to make the comparisons fair I'll standardize the data first. First, a look at the data before scaling.
 
 #+BEGIN_SRC ipython :session emailmodel :results output
 print(x_train.describe())
@@ -268,28 +198,28 @@ print(x_train.describe())
 #+begin_example
        clustering      degree  degree_centrality  closeness_centrality  \
 count  564.000000  564.000000         564.000000            564.000000   
-mean     0.398086   33.609929           0.033476              0.379251   
-std      0.250952   36.283965           0.036139              0.076887   
+mean     0.395404   32.521277           0.032392              0.378223   
+std      0.250491   37.979539           0.037828              0.075529   
 min      0.000000    1.000000           0.000996              0.000000   
-25%      0.270266    7.000000           0.006972              0.345993   
-50%      0.377350   23.500000           0.023406              0.387551   
-75%      0.520208   46.000000           0.045817              0.426084   
-max      1.000000  234.000000           0.233068              0.531259   
+25%      0.267859    6.000000           0.005976              0.343534   
+50%      0.370842   22.000000           0.021912              0.387008   
+75%      0.523810   44.000000           0.043825              0.423517   
+max      1.000000  347.000000           0.345618              0.573848   
 
        betweenness_centrality    pagerank     authority  department_0  \
 count              564.000000  564.000000  5.640000e+02    564.000000   
-mean                 0.001503    0.001007  9.965503e-04      0.051418   
-std                  0.003606    0.000894  1.220955e-03      0.221046   
+mean                 0.001605    0.000983  9.704369e-04      0.054965   
+std                  0.005153    0.000948  1.232750e-03      0.228113   
 min                  0.000000    0.000171  4.675065e-58      0.000000   
-25%                  0.000005    0.000359  1.786180e-04      0.000000   
-50%                  0.000183    0.000770  5.339403e-04      0.000000   
-75%                  0.001329    0.001310  1.298304e-03      0.000000   
-max                  0.037789    0.006069  7.491040e-03      1.000000   
+25%                  0.000005    0.000331  1.533495e-04      0.000000   
+50%                  0.000167    0.000726  5.232265e-04      0.000000   
+75%                  0.001201    0.001249  1.247495e-03      0.000000   
+max                  0.087415    0.009071  8.370248e-03      1.000000   
 
        department_1  department_2      ...        department_32  \
 count    564.000000    564.000000      ...           564.000000   
-mean       0.062057      0.008865      ...             0.008865   
-std        0.241473      0.093820      ...             0.093820   
+mean       0.074468      0.008865      ...             0.008865   
+std        0.262764      0.093820      ...             0.093820   
 min        0.000000      0.000000      ...             0.000000   
 25%        0.000000      0.000000      ...             0.000000   
 50%        0.000000      0.000000      ...             0.000000   
@@ -297,37 +227,39 @@ min        0.000000      0.000000      ...             0.000000
 max        1.000000      1.000000      ...             1.000000   
 
        department_33  department_34  department_35  department_36  \
-count          564.0     564.000000     564.000000     564.000000   
-mean             0.0       0.014184       0.005319       0.012411   
-std              0.0       0.118356       0.072803       0.110811   
-min              0.0       0.000000       0.000000       0.000000   
-25%              0.0       0.000000       0.000000       0.000000   
-50%              0.0       0.000000       0.000000       0.000000   
-75%              0.0       0.000000       0.000000       0.000000   
-max              0.0       1.000000       1.000000       1.000000   
-
-       department_37  department_38  department_39  department_40  \
 count     564.000000     564.000000     564.000000     564.000000   
-mean        0.021277       0.012411       0.003546       0.001773   
-std         0.144433       0.110811       0.059496       0.042108   
+mean        0.001773       0.014184       0.005319       0.021277   
+std         0.042108       0.118356       0.072803       0.144433   
 min         0.000000       0.000000       0.000000       0.000000   
 25%         0.000000       0.000000       0.000000       0.000000   
 50%         0.000000       0.000000       0.000000       0.000000   
 75%         0.000000       0.000000       0.000000       0.000000   
 max         1.000000       1.000000       1.000000       1.000000   
 
+       department_37  department_38  department_39  department_40  \
+count     564.000000     564.000000          564.0     564.000000   
+mean        0.014184       0.014184            0.0       0.001773   
+std         0.118356       0.118356            0.0       0.042108   
+min         0.000000       0.000000            0.0       0.000000   
+25%         0.000000       0.000000            0.0       0.000000   
+50%         0.000000       0.000000            0.0       0.000000   
+75%         0.000000       0.000000            0.0       0.000000   
+max         1.000000       1.000000            0.0       1.000000   
+
        department_41  
-count          564.0  
-mean             0.0  
-std              0.0  
-min              0.0  
-25%              0.0  
-50%              0.0  
-75%              0.0  
-max              0.0  
+count     564.000000  
+mean        0.001773  
+std         0.042108  
+min         0.000000  
+25%         0.000000  
+50%         0.000000  
+75%         0.000000  
+max         1.000000  
 
 [8 rows x 49 columns]
 #+end_example
+
+Now I'll scale it.
 
 #+BEGIN_SRC ipython :session emailmodel :results none
 scaler = StandardScaler()
@@ -335,6 +267,8 @@ scaler.fit(x_train)
 x_train = pandas.DataFrame(scaler.transform(x_train), columns=x_train.columns)
 x_test = scaler.transform(x_test)
 #+END_SRC
+
+Now the means should be near 0 (very small) and the standard deviations should be around 1.
 
 #+BEGIN_SRC ipython :session emailmodel :results output
 print(x_train.describe())
@@ -404,6 +338,77 @@ max              0.0
 
 [8 rows x 49 columns]
 #+end_example
+
+* Dummy Classifier
+  As a baseline I'll use a [[http://scikit-learn.org/stable/modules/model_evaluation.html#dummy-estimators][Dummy Classifier]] which uses a simple rule rather than the input data to make predictions.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+parameter_grid = dict(strategy=["stratified", 'most_frequent', 'prior', 'uniform'])
+#+END_SRC
+
+Now we'll do a grid search.
+
+#+BEGIN_SRC ipython :session emailmodel :results none
+grid_search = GridSearchCV(DummyClassifier(), parameter_grid,
+                           cv=StratifiedKFold(10), scoring="roc_auc")
+grid_search.fit(x_train, y_train)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+BASELINE = grid_search.score(x_test, y_test)
+print(grid_search.best_params_)
+print(BASELINE)
+#+END_SRC
+
+#+RESULTS:
+: {'strategy': 'stratified'}
+: 0.470125786164
+
+It looks like it chose the *stratified* strategy, which should predict that the instances are all non-managers. Our baseline AUC score is 0.5 (0.47 now?).
+
+#+BEGIN_SRC ipython :session emailmodel :results output
+results = pandas.DataFrame(grid_search.cv_results_)
+print(results.head(1))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+   mean_fit_time  mean_score_time  mean_test_score  mean_train_score  \
+0        0.00229         0.001779          0.50866          0.498413   
+
+  param_strategy                      params  rank_test_score  \
+0     stratified  {'strategy': 'stratified'}                1   
+
+   split0_test_score  split0_train_score  split1_test_score       ...         \
+0           0.461806             0.49577           0.572917       ...          
+
+   split7_test_score  split7_train_score  split8_test_score  \
+0           0.491726            0.528738           0.457447   
+
+   split8_train_score  split9_test_score  split9_train_score  std_fit_time  \
+0            0.507243           0.466755            0.507485      0.000324   
+
+   std_score_time  std_test_score  std_train_score  
+0        0.000292        0.057224         0.017547  
+
+[1 rows x 31 columns]
+#+end_example
+
+#+BEGIN_SRC ipython :session emailmodel :file /tmp/dummy_scores.png
+figure = pyplot.figure()
+axe = figure.gca()
+strategies = parameter_grid["strategy"]
+x = pyplot.xticks(list(range(len(strategies))), strategies)
+axe.plot(range(len(strategies)), results.mean_test_score)
+axe.set_title("Dummy Classifier Strategy Vs AUC")
+axe.set_xlabel("strategy")
+axe.set_ylabel("AUC Score")
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/dummy_scores.png]]
+
+So it looks like all the strategies except *stratified* did the same - and even the stratified did basically the same if you round it off.
 
 * Feature Selection
   I'm going to need to do some feature reduction, but figuring out what is important and what isn't is something I'm going to have to leave to the machine. I'm going to assume that the features thrown out by logistic regression with l1 penalization are unimportant. 
@@ -493,6 +498,7 @@ def fit_and_display(model, identifier):
     print("\nX-Train Trees")
     model.fit(x_train_trees, y_train)
     print("Score: {:.2f}".format(model.score(x_test_trees, y_test)))
+    print("\nBest Training Score: {}".format(search.best_score_))
     return
 #+END_SRC  
 
@@ -543,7 +549,6 @@ Score: 0.91
 
 L1 seems to do better than L1 overall, although it doesn't do as well with the recursively data form some reason.
 
-
 * Random Forests
   I'll try a [[http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html][Random Forest]] classifier next.
 
@@ -560,13 +565,15 @@ Random Forest
 =============
 
 X-train
-Score: 0.95
+Score: 0.94
 
 X-Train Positive
-Score: 0.95
+Score: 0.93
 
 X-Train Trees
-Score: 0.96
+Score: 0.95
+
+Best Training Score: 0.9565736444343844
 #+end_example
 
 This seems to have done much better than the logistic regression did. My logistic-regression feature reduction doesn't seem to help.

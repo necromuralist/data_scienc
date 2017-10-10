@@ -11,6 +11,21 @@ import pickle
 import networkx
 import numpy
 import pandas
+
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    RandomForestClassifier,
+    )
+from sklearn.feature_selection import (
+    RFECV,
+)
+from sklearn.model_selection import (
+    GridSearchCV,
+    StratifiedKFold,
+    train_test_split,
+    )
 #+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
@@ -161,49 +176,157 @@ print(data.department.unique())
 : [ 1 21 25 14  9 26  4 17 34 11  5 10 36 37  7 22  8 15  3 29 20 16 38 27 13
 :   6  0 28  2 40 35 23 19 24 32 31 39 12 30 41 18 33]
 
-*** Adding Features
-**** Clustering
-
-#+BEGIN_SRC ipython :session randomgraphs :results none
-data["clustering"] = pandas.Series(networkx.clustering(email))
-#+END_SRC
-
-**** Degree
-
-#+BEGIN_SRC ipython :session randomgraphs :results none
-data["degree"] = pandas.Series(email.degree())
-#+END_SRC
+*** Department Dummy Variables
+   Even though I don't think it's going to prove useful, the =department= feature is actually categorical, despite the use of integers so we'll have to use One-Hot-Encoding to add dummy variables for it.
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
-print(data.head())
+dummies_data = pandas.get_dummies(data, columns=["department"])
+print(dummies_data.head(1))
 #+END_SRC
 
 #+RESULTS:
-:    department  management  degree  clustering
-: 0           1         0.0      44    0.276423
-: 1           1         NaN      52    0.265306
-: 2          21         NaN      95    0.297803
-: 3          21         1.0      71    0.384910
-: 4          21         1.0      96    0.318691
+#+begin_example
+   management  clustering  degree  degree_centrality  closeness_centrality  \
+0         0.0    0.276423      44           0.043825              0.421991   
 
-#+BEGIN_SRC ipython :session randomgraphs :results none
-missing_management = data[data.management.isnull()]
-training = data[data.management.notnull()]
-assert len(missing_management) + len(training) == len(data)
+   betweenness_centrality  pagerank  authority  department_0  department_1  \
+0                0.001124  0.001224   0.000944             0             1   
+
+       ...        department_32  department_33  department_34  department_35  \
+0      ...                    0              0              0              0   
+
+   department_36  department_37  department_38  department_39  department_40  \
+0              0              0              0              0              0   
+
+   department_41  
+0              0  
+
+[1 rows x 50 columns]
+#+end_example
+
+*** Separating the Training and Prediction Sets
+    We're going to use the model to predict what the missing =management= values are so I'm going to separate the missing and non-missing sets. 
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+training_data = dummies_data[pandas.notnull(dummies_data.management)]
+prediction_data = dummies_data[pandas.isnull(dummies_data.management)]
+print(training_data.shape)
+print(prediction_data.shape)
 #+END_SRC
 
-# In[ ]:
+#+RESULTS:
+: (753, 50)
+: (252, 50)
 
+The problem description tells us that the answer should have 252 entries so this is a safe assertion.
 
+#+BEGIN_SRC ipython :session randomgraphs :results none
+assert len(prediction_data) == 252
+#+END_SRC
+
+*** Training and Target Data
+    To train the model we'll need to separate out the =management= column (and remove it entirely from the =prediction= set).
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+non_management = [column for column in training_data.columns if column != "management"]
+y_train = training_data.management
+x_train = training_data[non_management]
+x_predict = prediction_data[non_management]
+#+END_SRC
+
+*** Scaling
+    I don't think the Random Forest model that I'm going to use needs it, but I'm going to standardize the data.
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_predict = pandas.DataFrame(scaler.transform(x_predict), index=x_predict.index)
+#+END_SRC
+
+*** Feature Selection
+    Since we now have so many features, I'm going to do some feature selection.
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(x_train.shape)
+print(x_predict.shape)
+trees = ExtraTreesClassifier(n_estimators=10)
+eliminator = RFECV(estimator=trees, cv=StratifiedKFold(10), scoring="roc_auc")
+eliminator.fit(x_train, y_train)
+x_train_reduced = eliminator.transform(x_train)
+x_predict_reduced = pandas.DataFrame(eliminator.transform(x_predict), index=x_predict.index)
+print(x_train_reduced.shape)
+print(x_predict_reduced.shape)
+#+END_SRC
+
+#+RESULTS:
+: (753, 49)
+: (252, 49)
+: (753, 9)
+: (252, 9)
+
+When I used the train-test-split training model it left 17 columns. I wonder if using the whole training set messes it up.
+
+*** Logistic Regression
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+model = LogisticRegressionCV(penalty="l1", scoring="roc_auc",
+                             solver="liblinear", cv=StratifiedKFold(10))
+model.fit(x_train_reduced, y_train)
+print(model.scores_[1.0].mean())
+print(model.scores_[1.0].std())
+#+END_SRC
+
+#+RESULTS:
+: 0.801941720028
+: 0.2034340985
+
+It seems to be doing much worse than when I used the train-test split.
+
+*** Random Forests
+#+BEGIN_SRC ipython :session randomgraphs :results output
+parameter_grid = dict(n_estimators=range(10, 100, 10))
+search = GridSearchCV(RandomForestClassifier(), parameter_grid,
+                      cv=StratifiedKFold(10), scoring="roc_auc")
+search.fit(x_train_reduced, y_train)
+print(search.best_score_)
+#+END_SRC
+
+#+RESULTS:
+: 0.971585130138
+
+*** Submission
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
 def salary_predictions():
-    
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Prediction that employee is management
 
+    Calculates the probability that an employee is management
+    
+    Returns:
+     pandas.Series: Node ID, probability of node
+    """
+    # probabilites is an array with rows of 
+    # [<probability not management>, <probability management>]
+    # see search.best_estimator_.classes_ to see what each entry represents
+    probabilities = search.best_estimator_.predict_proba(x_predict_reduced)
+    return pandas.Series(probabilities[:, 1], index=x_predict_reduced.index)
+#+END_SRC
 
-# ### Part 2B - New Connections Prediction
-# 
+#+BEGIN_SRC ipython :session randomgraphs :results output
+output = salary_predictions()
+print(output.head())
+#+END_SRC
+
+#+RESULTS:
+: 1     0.016667
+: 2     0.950000
+: 5     1.000000
+: 8     0.150000
+: 14    0.066667
+: dtype: float64
+
+** Part 2B - New Connections Prediction
+
 # For the last part of this assignment, you will predict future connections between employees of the network. The future connections information has been loaded into the variable `future_connections`. The index is a tuple indicating a pair of nodes that currently do not have a connection, and the `Future Connection` column indicates if an edge between those two nodes will exist in the future, where a value of 1.0 indicates a future connection.
 
 # In[ ]:
@@ -247,4 +370,6 @@ def new_connections_predictions():
     # Your Code Here
     
     return # Your Answer Here
-    
+
+
+
