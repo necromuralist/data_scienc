@@ -294,8 +294,221 @@ print(search.best_score_)
 #+RESULTS:
 : 0.971585130138
 
-*** Submission
+#+BEGIN_SRC ipython :session randomgraphs :results none
+class RandomForest(object):
+    """builds the random forest
 
+    Args:
+     x_train(array): data to train on
+     y_train(array): targets for training
+     start (int): start value for number of estimators
+     stop (int): upper value for range of estimators
+     step (int): increment for range of estimators
+     folds (int): K-folds for cross-validation    
+    """
+    def __init__(self, x_train, y_train,
+                 start=10, stop=100, step=10, folds=10):
+        self.x_train = x_train
+        self.y_train = y_train
+        self.start = start
+        self.stop = stop
+        self.step = step
+        self.folds = folds
+        self._parameters = None
+        self._search = None
+        self._model = None
+        return
+
+    @property
+    def parameters(self):
+        """parameters for the grid-search"""
+        if self._parameters is None:
+            self._parameters = dict(n_estimators=range(self.start,
+                                                       self.stop,
+                                                       self.step))
+        return self._parameters
+
+    @property
+    def search(self):
+        """fitted grid search to find hyper-parameters"""
+        if self._search is None:
+            self._search = GridSearchCV(RandomForestClassifier(),
+                                        self.parameters,
+                                        cv=StratifiedKFold(self.folds),
+                                        scoring="roc_auc")
+            self._search.fit(self.x_train, self.y_train)
+        return self._search
+
+    @property
+    def model(self):
+        """best model found by the grid search"""
+        if self._model is None:
+            self._model = self.search.best_estimator_
+        return self._model
+#+END_SRC
+
+*** Data Loader
+    Since having all these org-babel things around makes things kind of hard I'm going to make a class to bundle everything together.
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+class DataLoader(object):
+    """loads and transforms the data
+    Args:
+     estimators (int): number of trees to use for feature elimination
+    """
+    def __init__(self, estimators=10):
+        self.estimators = estimators
+        self._data = None
+        self._dummies_data = None
+        self._training_data = None
+        self._prediction_data = None
+        self._non_management = None
+        self._y_train = None
+        self._x_train = None
+        self._x_predict = None
+        self._scaler = None
+        self._x_train_scaled = None
+        self._x_predict_scaled = None
+        self._eliminator = None
+        self._x_train_reduced = None
+        self._x_predict_reduced = None
+        return
+
+    @property
+    def data(self):
+        """The initial data"""
+        if self._data is None:
+            if not os.path.isfile("email_data.h5"):
+                data = pandas.DataFrame(index=email.nodes())
+                data["department"] = pandas.Series(networkx.get_node_attributes(email, "Department"))
+                data["management"] = pandas.Series(networkx.get_node_attributes(email, "ManagementSalary"))
+                data["clustering"] = pandas.Series(networkx.clustering(email))
+                data["degree"] = pandas.Series(email.degree())
+                data["degree_centrality"] = pandas.Series(networkx.degree_centrality(email))
+                data["closeness_centrality"] = pandas.Series(networkx.closeness_centrality(email))
+                data["betweenness_centrality"] = pandas.Series(networkx.betweenness_centrality(email))
+                data["pagerank"] = pandas.Series(networkx.pagerank(email))
+                _, authority = networkx.hits(email)
+                data["authority"] = pandas.Series(authority)
+                data.to_hdf("email_data.h5","df" )
+                self._data = data
+            else:
+                self._data = pandas.read_hdf('email_data.h5', "df")
+        return self._data
+
+    @property
+    def dummies_data(self):
+        """one-hot-encoded data"""
+        if self._dummies_data is None:
+            self._dummies_data = pandas.get_dummies(self.data, columns=["department"])
+        return self._dummies_data
+
+    @property
+    def training_data(self):
+        """data with management information"""
+        if self._training_data is None:
+            self._training_data = self.dummies_data[pandas.notnull(
+                self.dummies_data.management)]
+        return self._training_data
+
+    @property
+    def prediction_data(self):
+        """data missing management information"""
+        if self._prediction_data is None:
+            self._prediction_data = self.dummies_data[pandas.isnull(
+                self.dummies_data.management)]
+            assert len(self._prediction_data) == 252
+        return self._prediction_data
+
+    @property
+    def non_management(self):
+        """list of columns minus management"""
+        if self._non_management is None:
+            self._non_management = [
+                column for column in self.training_data.columns
+                if column != "management"]
+        return self._non_management
+
+    @property
+    def y_train(self):
+        """target-data for training"""
+        if self._y_train is None:
+            self._y_train = self.training_data.management
+        return self._y_train
+
+    @property
+    def x_train(self):
+        """data for training"""
+        if self._x_train is None:
+            self._x_train = self.training_data[self.non_management]
+        return self._x_train
+
+    @property
+    def x_predict(self):
+        """set to make predictions"""
+        if self._x_predict is None:
+            self._x_predict = self.prediction_data[self.non_management]
+        return self._x_predict
+
+    @property
+    def scaler(self):
+        """standard scaler"""
+        if self._scaler is None:
+            self._scaler = StandardScaler()
+        return self._scaler
+
+    @property
+    def x_train_scaled(self):
+        """training data scaled to 1 std, 0 mean"""
+        if self._x_train_scaled is None:
+            self._x_train_scaled = self.scaler.fit_transform(self.x_train)
+        return self._x_train_scaled
+
+    @property
+    def x_predict_scaled(self):
+        """prediction data with mean 0, std 1
+
+        The answer requires the index so this is a dataframe
+        instead of an array
+
+        Returns:
+         pandas.DataFrame: scaled data with index preserved
+        """
+        if self._x_predict_scaled is None:
+            self._x_predict_scaled = pandas.DataFrame(
+                self.scaler.transform(self.x_predict),
+                index=self.x_predict.index)
+        return self._x_predict_scaled
+
+    @property
+    def eliminator(self):
+        """recursive feature eliminator"""
+        if self._eliminator is None:
+            trees = ExtraTreesClassifier(n_estimators=10)
+            self._eliminator = RFECV(estimator=trees, cv=StratifiedKFold(10), 
+                                     scoring="roc_auc")
+            self._eliminator.fit(self.x_train_scaled, self.y_train)
+        return self._eliminator
+
+    @property
+    def x_train_reduced(self):
+        """training data with features eliminated"""
+        if self._x_train_reduced is None:
+            self._x_train_reduced = self.eliminator.transform(
+                self.x_train_scaled)
+        return self._x_train_reduced
+
+    @property
+    def x_predict_reduced(self):
+        """prediction data with features eliminated"""
+        if self._x_predict_reduced is None:
+            self._x_predict_reduced = pandas.DataFrame(
+                self.eliminator.transform(self.x_predict_scaled),
+                index=self.x_predict_scaled.index)
+        return self._x_predict_reduced
+#+END_SRC
+
+*** Submission
 #+BEGIN_SRC ipython :session randomgraphs :results none
 def salary_predictions():
     """Prediction that employee is management
@@ -305,11 +518,14 @@ def salary_predictions():
     Returns:
      pandas.Series: Node ID, probability of node
     """
+    data = DataLoader()
+    forest = RandomForest(data.x_train_reduced, data.y_train)
     # probabilites is an array with rows of 
     # [<probability not management>, <probability management>]
-    # see search.best_estimator_.classes_ to see what each entry represents
-    probabilities = search.best_estimator_.predict_proba(x_predict_reduced)
-    return pandas.Series(probabilities[:, 1], index=x_predict_reduced.index)
+    # see forest.model.classes_ to see what each entry represents
+    probabilities = forest.model.predict_proba(data.x_predict_reduced)
+    assert len(probabilities) == 252
+    return pandas.Series(probabilities[:, 1], index=data.x_predict_reduced.index)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
@@ -318,58 +534,74 @@ print(output.head())
 #+END_SRC
 
 #+RESULTS:
-: 1     0.016667
-: 2     0.950000
-: 5     1.000000
-: 8     0.150000
-: 14    0.066667
+: 1     0.0250
+: 2     0.9750
+: 5     1.0000
+: 8     0.1250
+: 14    0.0875
 : dtype: float64
 
 ** Part 2B - New Connections Prediction
 
-# For the last part of this assignment, you will predict future connections between employees of the network. The future connections information has been loaded into the variable `future_connections`. The index is a tuple indicating a pair of nodes that currently do not have a connection, and the `Future Connection` column indicates if an edge between those two nodes will exist in the future, where a value of 1.0 indicates a future connection.
+For the last part of this assignment, you will predict future connections between employees of the network. The future connections information has been loaded into the variable `future_connections`. The index is a tuple indicating a pair of nodes that currently do not have a connection, and the `Future Connection` column indicates if an edge between those two nodes will exist in the future, where a value of 1.0 indicates a future connection.
 
-# In[ ]:
+#+BEGIN_SRC ipython :session randomgraphs :results none
+future_connections = pandas.read_csv('Future_Connections.csv', index_col=0, converters={0: eval})
+#+END_SRC
 
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(future_connections.head(10))
+#+END_SRC
 
-future_connections = pd.read_csv('Future_Connections.csv', index_col=0, converters={0: eval})
-future_connections.head(10)
+#+RESULTS:
+#+begin_example
+            Future Connection
+(6, 840)                  0.0
+(4, 197)                  0.0
+(620, 979)                0.0
+(519, 872)                0.0
+(382, 423)                0.0
+(97, 226)                 1.0
+(349, 905)                0.0
+(429, 860)                0.0
+(309, 989)                0.0
+(468, 880)                0.0
+#+end_example
 
+Using network `G` and `future_connections`, identify the edges in `future_connections` with missing values and predict whether or not these edges will have a future connection.
 
-# Using network `G` and `future_connections`, identify the edges in `future_connections` with missing values and predict whether or not these edges will have a future connection.
-# 
-# To accomplish this, you will need to create a matrix of features for the edges found in `future_connections` using networkx, train a sklearn classifier on those edges in `future_connections` that have `Future Connection` data, and predict a probability of the edge being a future connection for those edges in `future_connections` where `Future Connection` is missing.
-# 
-# 
-# 
-# Your predictions will need to be given as the probability of the corresponding edge being a future connection.
-# 
-# The evaluation metric for this assignment is the Area Under the ROC Curve (AUC).
-# 
-# Your grade will be based on the AUC score computed for your classifier. A model which with an AUC of 0.75 or higher will receive full points.
-# 
-# Using your trained classifier, return a series of length 122112 with the data being the probability of the edge being a future connection, and the index being the edge as represented by a tuple of nodes.
-# 
-#     Example:
-#     
-#         (107, 348)    0.35
-#         (542, 751)    0.40
-#         (20, 426)     0.55
-#         (50, 989)     0.35
-#                   ...
-#         (939, 940)    0.15
-#         (555, 905)    0.35
-#         (75, 101)     0.65
-#         Length: 122112, dtype: float64
+ To accomplish this, you will need to create a matrix of features for the edges found in `future_connections` using networkx, train a sklearn classifier on those edges in `future_connections` that have `Future Connection` data, and predict a probability of the edge being a future connection for those edges in `future_connections` where `Future Connection` is missing.
 
-# In[ ]:
+Your predictions will need to be given as the probability of the corresponding edge being a future connection.
 
+The evaluation metric for this assignment is the Area Under the ROC Curve (AUC).
 
+Your grade will be based on the AUC score computed for your classifier. A model which with an AUC of 0.75 or higher will receive full points.
+
+Using your trained classifier, return a series of length 122112 with the data being the probability of the edge being a future connection, and the index being the edge as represented by a tuple of nodes.
+
+#+BEGIN_EXAMPLE
+         (107, 348)    0.35
+         (542, 751)    0.40
+         (20, 426)     0.55
+         (50, 989)     0.35
+                   ...
+         (939, 940)    0.15
+         (555, 905)    0.35
+         (75, 101)     0.65
+         Length: 122112, dtype: float64
+#+END_EXAMPLE
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
 def new_connections_predictions():
     
     # Your Code Here
     
     return # Your Answer Here
+#+END_SRC
 
+#+BEGIN_SRC ipython :session randomgraphs :results output
+outcome = new_connections_prediction()
+#+END_SRC
 
 
