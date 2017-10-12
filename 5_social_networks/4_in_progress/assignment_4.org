@@ -524,7 +524,6 @@ def salary_predictions():
     # [<probability not management>, <probability management>]
     # see forest.model.classes_ to see what each entry represents
     probabilities = forest.model.predict_proba(data.x_predict_reduced)
-    assert len(probabilities) == 252
     return pandas.Series(probabilities[:, 1], index=data.x_predict_reduced.index)
 #+END_SRC
 
@@ -534,12 +533,17 @@ print(output.head())
 #+END_SRC
 
 #+RESULTS:
-: 1     0.0250
-: 2     0.9750
-: 5     1.0000
-: 8     0.1250
-: 14    0.0875
+: 1     0.033333
+: 2     0.944444
+: 5     1.000000
+: 8     0.155556
+: 14    0.022222
 : dtype: float64
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+assert all(output.index == DataLoader().prediction_data.index)
+assert len(output) == 252
+#+END_SRC
 
 ** Part 2B - New Connections Prediction
 
@@ -568,6 +572,16 @@ print(future_connections.head(10))
 (468, 880)                0.0
 #+end_example
 
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(future_connections['Future Connection'].value_counts())
+#+END_SRC
+
+#+RESULTS:
+: 0.0    337002
+: 1.0     29332
+: Name: Future Connection, dtype: int64
+
+
 Using network `G` and `future_connections`, identify the edges in `future_connections` with missing values and predict whether or not these edges will have a future connection.
 
  To accomplish this, you will need to create a matrix of features for the edges found in `future_connections` using networkx, train a sklearn classifier on those edges in `future_connections` that have `Future Connection` data, and predict a probability of the edge being a future connection for those edges in `future_connections` where `Future Connection` is missing.
@@ -591,6 +605,10 @@ Using your trained classifier, return a series of length 122112 with the data be
          (75, 101)     0.65
          Length: 122112, dtype: float64
 #+END_EXAMPLE
+*** Missing Future Connections
+#+BEGIN_SRC ipython :session randomgraphs :results none
+
+#+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
 def new_connections_predictions():
@@ -601,7 +619,8 @@ def new_connections_predictions():
 #+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
-outcome = new_connections_prediction()
+outcome = new_connections_predictions()
+assert len(outcome) == 12112
 #+END_SRC
 
 

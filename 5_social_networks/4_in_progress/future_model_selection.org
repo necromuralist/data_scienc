@@ -1,0 +1,195 @@
+#+TITLE: Predicting Future Connections
+
+This will select a model to predict whether an edge in the email-network that currently doesn't have an edge will have one in the future.
+
+* Imports
+
+#+BEGIN_SRC ipython :session futures :results none 
+# pypi
+import networkx
+import pandas
+import seaborn
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none 
+% matplotlib inline
+seaborn.set_style("whitegrid")
+#+END_SRC
+
+* Constants
+
+#+BEGIN_SRC ipython :session futures :results none
+class Futures(object):
+    target = "Future Connection"
+    data_file = "Future_Connections.csv"
+    graph_file = "email_prediction.txt"
+    networkx_data_index = 2
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+class DataNames(object):
+    resource_allocation = 'resource_allocation'
+    jaccard = 'jaccard_coefficient'
+    adamic = "adamic_adar"
+    preferential = "preferential_attachment"
+    common_neighbors = "common_neighbors"
+#+END_SRC
+
+* The Email-Graph
+  To get the features for the models we'll need to use the email-graph.
+
+#+BEGIN_SRC ipython :session futures :results none
+email = networkx.read_gpickle(Futures.graph_file)
+#+END_SRC
+
+* The Data
+
+#+BEGIN_SRC sh
+head Future_Connections.csv
+echo
+#+END_SRC
+
+#+RESULTS:
+|            | Future Connection |
+| (6, 840)   |               0.0 |
+| (4, 197)   |               0.0 |
+| (620, 979) |               0.0 |
+| (519, 872) |               0.0 |
+| (382, 423) |               0.0 |
+| (97, 226)  |               1.0 |
+| (349, 905) |               0.0 |
+| (429, 860) |               0.0 |
+| (309, 989) |               0.0 |
+
+#+BEGIN_SRC ipython :session futures :results none
+future_connections = pandas.read_csv(Futures.data_file,
+                                     index_col=0,
+                                     converters={0: eval})
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections[Futures.target].value_counts())
+#+END_SRC
+
+#+RESULTS:
+: 0.0    337002
+: 1.0     29332
+: Name: Future Connection, dtype: int64
+
+This is a fairly big data-set.
+
+#+BEGIN_SRC ipython :session futures :file /tmp/future_connections_counts.png
+seaborn.countplot(x=Futures.target, data=future_connections)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/future_connections_counts.png]]
+
+** Adding networkx values
+   This is a function to get networkx data and add it to the data-frame.
+
+#+BEGIN_SRC ipython :session futures :results none
+def add_networkx_data(adder, name, graph=email, frame=future_connections):
+    """Adds networkx data to the frame
+
+    The networkx link-prediction functions return generators of triples:
+     (first-node, second-node, value)
+
+    This will use the index of the frame that's passed in as the source of 
+    node-pairs for the networkx function (called `ebunch` in the networkx
+    documentation) and the add only the value we want back to the frame
+
+    Args:
+     adder: networkx function to call to get the new data
+     name: column-name to add to the frame
+     graph: networkx graph to pass to the function
+     frame (pandas.DataFrame): frame with node-pairs as index to add data to
+    """
+    frame[name] = [output[Futures.networkx_data_index]
+                   for output in adder(graph, frame.index)]
+    return frame
+#+END_SRC
+
+** Adding A Resource Allocation Index
+
+#+BEGIN_SRC ipython :session futures :results none
+add_networkx_data(networkx.resource_allocation_index,
+                  DataNames.resource_allocation)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation
+: (6, 840)                0.0             0.136721
+
+** Adding the Jaccard Coefficient
+#+BEGIN_SRC ipython :session futures :results none
+add_networkx_data(networkx.jaccard_coefficient, DataNames.jaccard)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient
+: (6, 840)                0.0             0.136721              0.07377
+
+** Adamic Adar
+
+#+BEGIN_SRC ipython :session futures :results none
+add_networkx_data(networkx.adamic_adar_index, DataNames.adamic)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  
+: (6, 840)     2.110314  
+
+** Preferential Attachment
+#+BEGIN_SRC ipython :session futures :results none
+add_networkx_data(networkx.preferential_attachment, DataNames.preferential)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+** Common Neighbors
+#+BEGIN_SRC ipython :session futures :results none
+add_networkx_data(networkx.cn_soundarajan_hopcroft, DataNames.common_neighbors)
+#+END_SRC
+* Separating the Edges Without 'Future Connection' Values
+   We are going to train on the values in the data with predictions and then make predictions for those that don't. For model selection we don't need the set missing predictions, but I'll separate it out anyway to be complete.
+
+#+BEGIN_SRC ipython :session futures :results none
+prediction_set = future_connections[future_connections[Futures.target].isnull()]
+training_set = future_connections[future_connections[Futures.target].notnull()]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(prediction_set.shape)
+print(training_set.shape)
+assert len(prediction_set) + len(training_set) == len(future_connections)
+#+END_SRC
+
+#+RESULTS:
+: (122112, 1)
+: (366334, 1)
+
