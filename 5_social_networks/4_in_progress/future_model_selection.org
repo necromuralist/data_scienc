@@ -9,6 +9,8 @@ This will select a model to predict whether an edge in the email-network that cu
 import networkx
 import pandas
 import seaborn
+
+from sklearn.model_selection import train_test_split
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none 
@@ -32,7 +34,6 @@ class DataNames(object):
     jaccard = 'jaccard_coefficient'
     adamic = "adamic_adar"
     preferential = "preferential_attachment"
-    common_neighbors = "common_neighbors"
 #+END_SRC
 
 * The Email-Graph
@@ -44,6 +45,8 @@ email = networkx.read_gpickle(Futures.graph_file)
 
 * The Data
 
+** The Given Data 
+   We're given a csv file with the training and prediction data in it ('Future_Connections.csv').
 #+BEGIN_SRC sh
 head Future_Connections.csv
 echo
@@ -61,11 +64,20 @@ echo
 | (429, 860) |               0.0 |
 | (309, 989) |               0.0 |
 
+Org-mode converted it to a table, but it's actually a CSV. The first line of data looks like this.
+
+#+BEGIN_EXAMPLE
+"(6, 840)",0.0
+#+END_EXAMPLE
+
+
 #+BEGIN_SRC ipython :session futures :results none
 future_connections = pandas.read_csv(Futures.data_file,
                                      index_col=0,
                                      converters={0: eval})
 #+END_SRC
+
+So, we're loading the node-pairs (edges) as the index of the data-frame and explicitly telling pandas that the Future Connection values should be converted , which I don't think is necessary, but this came with the problem statement so I'll just leave it in in case there's some side-effect I'm not aware of.
 
 #+BEGIN_SRC ipython :session futures :results output
 print(future_connections[Futures.target].value_counts())
@@ -76,7 +88,7 @@ print(future_connections[Futures.target].value_counts())
 : 1.0     29332
 : Name: Future Connection, dtype: int64
 
-This is a fairly big data-set.
+This is a fairly big (and lopsided) data-set.
 
 #+BEGIN_SRC ipython :session futures :file /tmp/future_connections_counts.png
 seaborn.countplot(x=Futures.target, data=future_connections)
@@ -85,8 +97,11 @@ seaborn.countplot(x=Futures.target, data=future_connections)
 #+RESULTS:
 [[file:/tmp/future_connections_counts.png]]
 
-** Adding networkx values
-   This is a function to get networkx data and add it to the data-frame.
+* Adding networkx features
+   To create features to train the model and make predictions, I'm going to use the networkx [[https://networkx.github.io/documentation/networkx-1.10/reference/algorithms.link_prediction.html][link prediction]] algorithms.
+
+** Add Networkx Data
+   This is a function to get networkx data and add it to the data-frame. It won't work for the community-based algorithms.
 
 #+BEGIN_SRC ipython :session futures :results none
 def add_networkx_data(adder, name, graph=email, frame=future_connections):
@@ -122,8 +137,11 @@ print(future_connections.head(1))
 #+END_SRC
 
 #+RESULTS:
-:           Future Connection  resource_allocation
-: (6, 840)                0.0             0.136721
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
 
 ** Adding the Jaccard Coefficient
 #+BEGIN_SRC ipython :session futures :results none
@@ -171,11 +189,19 @@ print(future_connections.head(1))
 :           adamic_adar  preferential_attachment  
 : (6, 840)     2.110314                     2070  
 
-** Common Neighbors
+** Community-Based Link Prediction
+   This requires identifying 'communities' first, so I'll defer it for now.
 #+BEGIN_SRC ipython :session futures :results none
-add_networkx_data(networkx.cn_soundarajan_hopcroft, DataNames.common_neighbors)
+#add_networkx_data(networkx.cn_soundarajan_hopcroft, DataNames.common_neighbors)
 #+END_SRC
-* Separating the Edges Without 'Future Connection' Values
+
+These three all require communities for them to work (so I'm skipping them):
+   - cn_soundarajan_hopcroft
+   - ra_index_soundarajan_hopcroft
+   - within_inter_cluster
+
+* Setup the Training and Testing Data
+** Separating the Edges Without 'Future Connection' Values
    We are going to train on the values in the data with predictions and then make predictions for those that don't. For model selection we don't need the set missing predictions, but I'll separate it out anyway to be complete.
 
 #+BEGIN_SRC ipython :session futures :results none
@@ -190,6 +216,33 @@ assert len(prediction_set) + len(training_set) == len(future_connections)
 #+END_SRC
 
 #+RESULTS:
-: (122112, 1)
-: (366334, 1)
+: (122112, 5)
+: (366334, 5)
 
+** Separate the Target and Training Sets
+
+#+BEGIN_SRC ipython :session futures :results none
+non_target = [column for column in future_connections.columns
+              if column != Futures.target]
+training = training_set[non_target]
+testing = training_set[Futures.target]
+predictions = prediction_set[non_target]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+assert all(training.columns == predictions.columns)
+assert len(training) == len(testing)
+#+END_SRC
+
+** Setting Up the Testing and Training Sets
+
+#+BEGIN_SRC ipython :session futures :results none
+x_train, x_test, y_train, y_test = train_test_split(training, testing)
+#+END_SRC
+
+** Scaling the Data
+   To enable the use of linear models I'm going to scale the data so the mean is 0 and the variace is 1.
+
+#+BEGIN_SRC ipython :session futures :results none
+
+#+END_SRC
