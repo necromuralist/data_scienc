@@ -10,7 +10,14 @@ import networkx
 import pandas
 import seaborn
 
-from sklearn.model_selection import train_test_split
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import RFECV
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.model_selection import (
+    train_test_split,
+    StratifiedKFold,
+    )
+from sklearn.preprocessing import StandardScaler
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none 
@@ -26,6 +33,7 @@ class Futures(object):
     data_file = "Future_Connections.csv"
     graph_file = "email_prediction.txt"
     networkx_data_index = 2
+    folds = 10
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none
@@ -137,11 +145,8 @@ print(future_connections.head(1))
 #+END_SRC
 
 #+RESULTS:
-:           Future Connection  resource_allocation  jaccard_coefficient  \
-: (6, 840)                0.0             0.136721              0.07377   
-: 
-:           adamic_adar  preferential_attachment  
-: (6, 840)     2.110314                     2070  
+:           Future Connection  resource_allocation
+: (6, 840)                0.0             0.136721
 
 ** Adding the Jaccard Coefficient
 #+BEGIN_SRC ipython :session futures :results none
@@ -220,7 +225,6 @@ assert len(prediction_set) + len(training_set) == len(future_connections)
 : (366334, 5)
 
 ** Separate the Target and Training Sets
-
 #+BEGIN_SRC ipython :session futures :results none
 non_target = [column for column in future_connections.columns
               if column != Futures.target]
@@ -235,14 +239,112 @@ assert len(training) == len(testing)
 #+END_SRC
 
 ** Setting Up the Testing and Training Sets
-
 #+BEGIN_SRC ipython :session futures :results none
-x_train, x_test, y_train, y_test = train_test_split(training, testing)
+x_train, x_test, y_train, y_test = train_test_split(training, testing, stratify=testing)
 #+END_SRC
+
+#+BEGIN_SRC ipython :session futures :file /tmp/future_training.png
+seaborn.countplot(y_train)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/future_training.png]]
+
+#+BEGIN_SRC ipython :session futures :file /tmp/future_testing.png
+seaborn.countplot(y_test)
+#+END_SRC
+
+#+RESULTS:
+[[file:/tmp/future_testing.png]]
 
 ** Scaling the Data
    To enable the use of linear models I'm going to scale the data so the mean is 0 and the variace is 1.
 
 #+BEGIN_SRC ipython :session futures :results none
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
 
+x_train = pandas.DataFrame(x_train, columns=training.columns)
+x_test = pandas.DataFrame(x_test, columns=training.columns)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(x_train.describe())
+print(x_test.describe())
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       resource_allocation  jaccard_coefficient   adamic_adar  \
+count         2.747500e+05         2.747500e+05  2.747500e+05   
+mean         -6.336050e-17        -3.749907e-19 -5.992093e-17   
+std           1.000002e+00         1.000002e+00  1.000002e+00   
+min          -3.763564e-01        -5.344745e-01 -4.293893e-01   
+25%          -3.763564e-01        -5.344745e-01 -4.293893e-01   
+50%          -3.763564e-01        -5.344745e-01 -4.293893e-01   
+75%          -7.591630e-02         1.919979e-01  4.254655e-03   
+max           6.165812e+01         2.634501e+01  4.443639e+01   
+
+       preferential_attachment  
+count             2.747500e+05  
+mean             -1.779266e-17  
+std               1.000002e+00  
+min              -5.405228e-01  
+25%              -5.013450e-01  
+50%              -3.684809e-01  
+75%               7.723832e-02  
+max               4.241034e+01  
+       resource_allocation  jaccard_coefficient   adamic_adar  \
+count         91584.000000         91584.000000  91584.000000   
+mean             -0.001957             0.001202     -0.001831   
+std               0.969007             1.007665      0.977610   
+min              -0.376356            -0.534475     -0.429389   
+25%              -0.376356            -0.534475     -0.429389   
+50%              -0.376356            -0.534475     -0.429389   
+75%              -0.078064             0.187122      0.003863   
+max              25.480252            26.345006     23.838226   
+
+       preferential_attachment  
+count             91584.000000  
+mean                 -0.005740  
+std                   0.961441  
+min                  -0.540523  
+25%                  -0.502481  
+50%                  -0.370752  
+75%                   0.072128  
+max                  22.358088  
+#+end_example
+** Feature Selection
+   To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
+*** RFECV with Logistic Regression
+#+BEGIN_SRC ipython :session futures :results none
+estimator = LogisticRegressionCV(n_jobs=-1)
+selector = RFECV(estimator, scoring='roc_auc',
+                 n_jobs=-1,
+                 cv=StratifiedKFold(Futures.folds))
+x_train_lr_rfs = selector.fit_transform(x_train, y_train)
+x_test_lr_rfs = selector.transform(x_test)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(selector.ranking_)
+#+END_SRC
+
+#+RESULTS:
+: [1 1 1 2]
+
+It looks like it only discarded preferential attachment.
+
+*** RFECV with Extra Trees
+
+#+BEGIN_SRC ipython :session futures :results none
+estimator = ExtraTreesClassifier()
+selector = RFECV(estimator, scoring='roc_auc', n_jobs=-1, cv=StratifiedKFold(Futures.folds))
+x_train_trees_rfs = selector.fit_transform(x_train, y_train)
+x_test_trees_rfs = selector.transform(x_test)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(selector.ranking_)
 #+END_SRC
