@@ -285,42 +285,42 @@ print(x_test.describe())
 #+begin_example
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         2.747500e+05         2.747500e+05  2.747500e+05   
-mean          3.015443e-17         5.410211e-17  1.030319e-16   
+mean         -8.169625e-17        -8.818747e-17  1.082947e-16   
 std           1.000002e+00         1.000002e+00  1.000002e+00   
-min          -3.767579e-01        -5.328067e-01 -4.286897e-01   
-25%          -3.767579e-01        -5.328067e-01 -4.286897e-01   
-50%          -3.767579e-01        -5.328067e-01 -4.286897e-01   
-75%          -7.664838e-02         1.910276e-01  4.807542e-03   
-max           6.178179e+01         2.624906e+01  4.446243e+01   
+min          -3.785464e-01        -5.327142e-01 -4.316035e-01   
+25%          -3.785464e-01        -5.327142e-01 -4.316035e-01   
+50%          -3.785464e-01        -5.327142e-01 -4.316035e-01   
+75%          -7.718587e-02         1.906831e-01  4.964835e-03   
+max           6.215994e+01         2.623299e+01  4.477755e+01   
 
        preferential_attachment  
 count             2.747500e+05  
-mean             -2.772345e-17  
+mean             -1.629593e-17  
 std               1.000002e+00  
-min              -5.412848e-01  
-25%              -5.018600e-01  
-50%              -3.698727e-01  
-75%               7.522729e-02  
-max               4.268027e+01  
+min              -5.441299e-01  
+25%              -5.051423e-01  
+50%              -3.721259e-01  
+75%               7.508471e-02  
+max               4.282670e+01  
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         91584.000000         91584.000000  91584.000000   
-mean             -0.000557             0.000105      0.001936   
-std               0.977113             0.993116      0.979893   
-min              -0.376758            -0.532807     -0.428690   
-25%              -0.376758            -0.532807     -0.428690   
-50%              -0.376758            -0.532807     -0.428690   
-75%              -0.074839             0.191028      0.007461   
-max              40.227245            26.249063     26.162102   
+mean              0.001498            -0.000812      0.002443   
+std               1.001620             0.990690      1.008216   
+min              -0.378546            -0.532714     -0.431603   
+25%              -0.378546            -0.532714     -0.431603   
+50%              -0.378546            -0.532714     -0.431603   
+75%              -0.073490             0.190683      0.006246   
+max              37.116635            17.311085     33.513761   
 
        preferential_attachment  
 count             91584.000000  
-mean                  0.004802  
-std                   0.986914  
-min                  -0.541285  
-25%                  -0.501860  
-50%                  -0.368159  
-75%                   0.086655  
-max                  25.431073  
+mean                  0.000916  
+std                   1.000756  
+min                  -0.544130  
+25%                  -0.504569  
+50%                  -0.370406  
+75%                   0.081392  
+max                  36.261300  
 #+end_example
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
@@ -377,8 +377,8 @@ print(estimator.coef_)
 #+END_SRC
 
 #+RESULTS:
-: (274750, 1)
-: [[ 0.18017936  0.57055489  1.51013455 -0.13024556]]
+: (274750, 2)
+: [[ 0.40766659  0.66881319  0.93949292  0.06572276]]
 
 This was more aggressive, cutting out half the features. It looks like it kept *Jaccard Coefficient* and *Adamic Adar* and got rid of *Resource Allocation* and *Preferential Attachment*.
 
@@ -397,8 +397,8 @@ print(x_train_trees_fsm.shape)
 #+END_SRC
 
 #+RESULTS:
-: [ 0.1780366   0.23649471  0.42157419  0.16389449]
-: (274750, 1)
+: [ 0.2382809   0.34231826  0.26116583  0.15823501]
+: (274750, 2)
 
 This seems much too aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see.
 
@@ -473,7 +473,7 @@ print(max(outcomes))
 #+END_SRC
 
 #+RESULTS:
-: (0.95812587351502443, 'logistic LR RFS')
+: (0.95796208944793848, 'logistic LR RFS')
 
 ** Fit Grid Search
    Since the Logistic Regression had its own cross-validation I didn't use a grid search, but for the forests I'll use one to figure out the best number of estimators. I'll have to look into what the other parameters do to figure out whether they're going to be useful.
@@ -525,9 +525,9 @@ forest_outcomes.append((score, "Random Forest, LR MFS"))
 #+END_SRC
 
 #+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.94
+: Mean of Mean Cross-Validation Scores: 0.96
 : Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.94
+: Testing Score: 0.95
 
 *** Extra Trees with Model Feature Selection
 *** Extra Trees with Recursive Feature Selection
