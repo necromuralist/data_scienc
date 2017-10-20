@@ -285,42 +285,42 @@ print(x_test.describe())
 #+begin_example
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         2.747500e+05         2.747500e+05  2.747500e+05   
-mean         -8.169625e-17        -8.818747e-17  1.082947e-16   
+mean          1.893057e-17        -9.263564e-17  8.317035e-17   
 std           1.000002e+00         1.000002e+00  1.000002e+00   
-min          -3.785464e-01        -5.327142e-01 -4.316035e-01   
-25%          -3.785464e-01        -5.327142e-01 -4.316035e-01   
-50%          -3.785464e-01        -5.327142e-01 -4.316035e-01   
-75%          -7.718587e-02         1.906831e-01  4.964835e-03   
-max           6.215994e+01         2.623299e+01  4.477755e+01   
+min          -3.761692e-01        -5.353489e-01 -4.294778e-01   
+25%          -3.761692e-01        -5.353489e-01 -4.294778e-01   
+50%          -3.761692e-01        -5.353489e-01 -4.294778e-01   
+75%          -7.690960e-02         1.941881e-01  4.955078e-03   
+max           6.186541e+01         2.645752e+01  4.458515e+01   
 
        preferential_attachment  
 count             2.747500e+05  
-mean             -1.629593e-17  
+mean              2.658555e-17  
 std               1.000002e+00  
-min              -5.441299e-01  
-25%              -5.051423e-01  
-50%              -3.721259e-01  
-75%               7.508471e-02  
-max               4.282670e+01  
+min              -5.424644e-01  
+25%              -5.030307e-01  
+50%              -3.692991e-01  
+75%               7.475839e-02  
+max               4.268885e+01  
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         91584.000000         91584.000000  91584.000000   
-mean              0.001498            -0.000812      0.002443   
-std               1.001620             0.990690      1.008216   
-min              -0.378546            -0.532714     -0.431603   
-25%              -0.378546            -0.532714     -0.431603   
-50%              -0.378546            -0.532714     -0.431603   
-75%              -0.073490             0.190683      0.006246   
-max              37.116635            17.311085     33.513761   
+mean              0.003811             0.006728      0.003506   
+std               0.982502             1.024356      0.990961   
+min              -0.376169            -0.535349     -0.429478   
+25%              -0.376169            -0.535349     -0.429478   
+50%              -0.376169            -0.535349     -0.429478   
+75%              -0.070324             0.194188      0.009480   
+max              26.459370            26.457522     23.950543   
 
        preferential_attachment  
 count             91584.000000  
-mean                  0.000916  
-std                   1.000756  
-min                  -0.544130  
-25%                  -0.504569  
-50%                  -0.370406  
-75%                   0.081392  
-max                  36.261300  
+mean                  0.000573  
+std                   0.987831  
+min                  -0.542464  
+25%                  -0.504174  
+50%                  -0.371585  
+75%                   0.081045  
+max                  22.094182  
 #+end_example
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
@@ -339,7 +339,7 @@ print(selector.ranking_)
 #+END_SRC
 
 #+RESULTS:
-: [1 1 1 1]
+: [1 1 1 2]
 
 It looks like it only discarded preferential attachment.
 
@@ -378,7 +378,7 @@ print(estimator.coef_)
 
 #+RESULTS:
 : (274750, 2)
-: [[ 0.40766659  0.66881319  0.93949292  0.06572276]]
+: [[ 0.41643397  0.67978168  0.91251998  0.07363884]]
 
 This was more aggressive, cutting out half the features. It looks like it kept *Jaccard Coefficient* and *Adamic Adar* and got rid of *Resource Allocation* and *Preferential Attachment*.
 
@@ -397,12 +397,16 @@ print(x_train_trees_fsm.shape)
 #+END_SRC
 
 #+RESULTS:
-: [ 0.2382809   0.34231826  0.26116583  0.15823501]
+: [ 0.26944378  0.22198226  0.29872226  0.20985171]
 : (274750, 2)
 
 This seems much too aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see.
 
 * Fitting the Models
+#+BEGIN_SRC ipython :session futures :results none
+best_outcomes = []
+#+END_SRC
+
 #+BEGIN_SRC ipython :session futures :results none
 def fit_and_print(estimator, x_train, x_test):
     """fits the estimator to the data
@@ -454,7 +458,7 @@ outcomes.append((score, "Logistic Trees FSM"))
 
 #+RESULTS:
 : Mean Cross-Validation Score: 0.91
-: Testing Score: 0.96
+: Testing Score: 0.95
 
 *** Extra Trees with Recursive Feature Selection
 #+BEGIN_SRC ipython :session futures :results output
@@ -469,11 +473,13 @@ outcomes.append((score, "Logistic Trees RFS"))
 It doesn't look like any of them really did better than any other.
 *** Best Logistic Regression Model
 #+BEGIN_SRC ipython :session futures :results output
-print(max(outcomes))
+best = max(outcomes)
+print(best)
+best_outcomes.append(best)
 #+END_SRC
 
 #+RESULTS:
-: (0.95796208944793848, 'logistic LR RFS')
+: (0.95852987421383651, 'logistic LR SFM')
 
 ** Fit Grid Search
    Since the Logistic Regression had its own cross-validation I didn't use a grid search, but for the forests I'll use one to figure out the best number of estimators. I'll have to look into what the other parameters do to figure out whether they're going to be useful.
@@ -507,14 +513,14 @@ parameters = dict(n_estimators = list(range(10, 200, 10)))
 forest = RandomForestClassifier()
 forest_outcomes = []
 #+END_SRC
-*** Logistic Regression with Recursive Feature Selection
+*** Logistic Regression Recursive Feature Selection
 #+BEGIN_SRC ipython :session futures :results output
 random_forest_lr_rfs, score = fit_grid_search(forest, parameters, x_train_lr_rfs, x_test_lr_rfs)
 forest_outcomes.append((score, "Random Forest, LR RFS"))
 #+END_SRC
 
 #+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.97
+: Mean of Mean Cross-Validation Scores: 0.96
 : Mean of Cross-Validation Score STDs: 0.00
 : Testing Score: 0.96
 
@@ -530,9 +536,48 @@ forest_outcomes.append((score, "Random Forest, LR MFS"))
 : Testing Score: 0.95
 
 *** Extra Trees with Model Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+random_forest_trees_sfm, score = fit_grid_search(forest, parameters, x_train_trees_fsm, x_test_trees_fsm)
+forest_outcomes.append((score, "Random Forest, Trees MFS"))
+#+END_SRC
+
+#+RESULTS:
+: Mean of Mean Cross-Validation Scores: 0.94
+: Mean of Cross-Validation Score STDs: 0.00
+: Testing Score: 0.95
+
 *** Extra Trees with Recursive Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+random_forest_trees_rfs, score = fit_grid_search(forest, parameters, x_train_trees_rfs, x_test_trees_rfs)
+forest_outcomes.append((score, "Random Forest, Trees RFS"))
+#+END_SRC
+
+#+RESULTS:
+: Mean of Mean Cross-Validation Scores: 0.97
+: Mean of Cross-Validation Score STDs: 0.00
+: Testing Score: 0.96
+
+*** Best Random Forest
+#+BEGIN_SRC ipython :session futures :results output
+best = max(forest_outcomes)
+print(best)
+best_outcomes.append(best)
+#+END_SRC
+
+#+RESULTS:
+: (0.95761268343815509, 'Random Forest, Trees RFS')
+
 ** Extra Trees
+#+BEGIN_SRC ipython :session futures :results none
+parameters = dict(n_estimators = list(range(10, 200, 10)))
+trees = ExtraTreesClassifier()
+trees_outcomes = []
+#+END_SRC
 *** Logistic Regression with Recursive Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+extra_trees_lr_rfs, score = fit_grid_search(trees, parameters, x_train_lr_rfs, x_test_lr_rfs)
+trees_outcomes.append((score, "Extra Trees, LR RFS"))
+#+END_SRC
 *** Logistic Regression with Model Feature Selection
 *** Extra Trees with Model Feature Selection
 *** Extra Trees with Recursive Feature Selection
