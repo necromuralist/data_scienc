@@ -579,5 +579,49 @@ extra_trees_lr_rfs, score = fit_grid_search(trees, parameters, x_train_lr_rfs, x
 trees_outcomes.append((score, "Extra Trees, LR RFS"))
 #+END_SRC
 *** Logistic Regression with Model Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+extra_trees_lr_sfm, score = fit_grid_search(trees, parameters, x_train_lr_sfm, x_test_lr_sfm)
+trees_outcomes.append((score, "Extra Trees, LR MFS"))
+#+END_SRC
+
+#+RESULTS:
+: Mean of Mean Cross-Validation Scores: 0.96
+: Mean of Cross-Validation Score STDs: 0.00
+: Testing Score: 0.95
+
 *** Extra Trees with Model Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+extra_trees_trees_sfm, score = fit_grid_search(trees, parameters, x_train_trees_fsm, x_test_trees_fsm)
+trees.append((score, "Extra Trees, Trees MFS"))
+#+END_SRC
+
+#+RESULTS:
+: Mean of Mean Cross-Validation Scores: 0.94
+: Mean of Cross-Validation Score STDs: 0.00
+: Testing Score: 0.95
+
 *** Extra Trees with Recursive Feature Selection
+#+BEGIN_SRC ipython :session futures :results output
+extra_trees_trees_rfs, score = fit_grid_search(trees, parameters, x_train_trees_rfs, x_test_trees_rfs)
+trees.append((score, "Extra Trees, Trees RFS"))
+#+END_SRC
+
+#+RESULTS:
+: Mean of Mean Cross-Validation Scores: 0.97
+: Mean of Cross-Validation Score STDs: 0.00
+: Testing Score: 0.96
+
+*** Best Extra Trees
+#+BEGIN_SRC ipython :session futures :results output
+best = max(extra_trees)
+print(best)
+best_outcomes.append(best)
+#+END_SRC
+
+#+RESULTS:
+: (0.95761268343815509, 'Random Forest, Trees RFS')
+
+* Best Model
+#+BEGIN_SRC ipython :session futures :results output
+print(max(best_outcomes))
+#+END_SRC
