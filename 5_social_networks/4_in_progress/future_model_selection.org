@@ -5,6 +5,9 @@ This will select a model to predict whether an edge in the email-network that cu
 * Imports
 
 #+BEGIN_SRC ipython :session futures :results none 
+# python standard library
+import pickle
+
 # pypi
 import networkx
 import pandas
@@ -51,6 +54,27 @@ class DataNames(object):
     preferential = "preferential_attachment"
 #+END_SRC
 
+#+BEGIN_SRC ipython :session futures :results none
+class Files(object):
+    """File-names for data persistence"""
+    future_training_data = 'future_training_data.csv'
+    future_selection_outcomes = 'future_selection_outcomes.pkl'
+    future_model_selection = "future_model_cvs.pkl"
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+class Training(object):
+    """data-pickles"""
+    x_train_lr_rfs = "x_train_lr_rfs.pkl"
+    x_test_lr_rfs = "x_test_lr_rfs.pkl"
+    x_train_trees_rfs = "x_train_trees_rfs.pkl"
+    x_test_trees_rfs = "x_test_trees_rfs.pkl"
+    x_train_lr_sfm = "x_train_lr_sfm.pkl"
+    x_test_lr_sfm = "x_test_lr_sfm.pkl"
+    x_train_trees_fsm = "x_train_trees_fsm.pkl"
+    x_test_trees_fsm = "x_test_trees_fsm.pkl"
+#+END_SRC
+
 * The Email-Graph
   To get the features for the models we'll need to use the email-graph.
 
@@ -87,9 +111,14 @@ Org-mode converted it to a table, but it's actually a CSV. The first line of dat
 
 
 #+BEGIN_SRC ipython :session futures :results none
-future_connections = pandas.read_csv(Futures.data_file,
-                                     index_col=0,
-                                     converters={0: eval})
+future_connections_pre_loaded = os.path.isfile(Files.future_training_data)
+if future_connections_pre_loaded:
+    future_connections = pandas.read_csv(Files.future_training_data,
+                                         index_col=0)
+else:
+    future_connections = pandas.read_csv(Futures.data_file,
+                                         index_col=0,
+                                         converters={0: eval})
 #+END_SRC
 
 So, we're loading the node-pairs (edges) as the index of the data-frame and explicitly telling pandas that the Future Connection values should be converted , which I don't think is necessary, but this came with the problem statement so I'll just leave it in in case there's some side-effect I'm not aware of.
@@ -143,35 +172,9 @@ def add_networkx_data(adder, name, graph=email, frame=future_connections):
 ** Adding A Resource Allocation Index
 
 #+BEGIN_SRC ipython :session futures :results none
-add_networkx_data(networkx.resource_allocation_index,
-                  DataNames.resource_allocation)
-#+END_SRC
-
-#+BEGIN_SRC ipython :session futures :results output
-print(future_connections.head(1))
-#+END_SRC
-
-#+RESULTS:
-:           Future Connection  resource_allocation
-: (6, 840)                0.0             0.136721
-
-** Adding the Jaccard Coefficient
-#+BEGIN_SRC ipython :session futures :results none
-add_networkx_data(networkx.jaccard_coefficient, DataNames.jaccard)
-#+END_SRC
-
-#+BEGIN_SRC ipython :session futures :results output
-print(future_connections.head(1))
-#+END_SRC
-
-#+RESULTS:
-:           Future Connection  resource_allocation  jaccard_coefficient
-: (6, 840)                0.0             0.136721              0.07377
-
-** Adamic Adar
-
-#+BEGIN_SRC ipython :session futures :results none
-add_networkx_data(networkx.adamic_adar_index, DataNames.adamic)
+if not future_connections_pre_loaded:
+    add_networkx_data(networkx.resource_allocation_index,
+                      DataNames.resource_allocation)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -182,12 +185,48 @@ print(future_connections.head(1))
 :           Future Connection  resource_allocation  jaccard_coefficient  \
 : (6, 840)                0.0             0.136721              0.07377   
 : 
-:           adamic_adar  
-: (6, 840)     2.110314  
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+** Adding the Jaccard Coefficient
+#+BEGIN_SRC ipython :session futures :results none
+if not future_connections_pre_loaded:
+    add_networkx_data(networkx.jaccard_coefficient, DataNames.jaccard)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+** Adamic Adar
+
+#+BEGIN_SRC ipython :session futures :results none
+if not future_connections_pre_loaded:
+    add_networkx_data(networkx.adamic_adar_index, DataNames.adamic)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
 
 ** Preferential Attachment
 #+BEGIN_SRC ipython :session futures :results none
-add_networkx_data(networkx.preferential_attachment, DataNames.preferential)
+if not future_connections_pre_loaded:
+    add_networkx_data(networkx.preferential_attachment, DataNames.preferential)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -211,6 +250,12 @@ These three all require communities for them to work (so I'm skipping them):
    - cn_soundarajan_hopcroft
    - ra_index_soundarajan_hopcroft
    - within_inter_cluster
+
+** Saving the Data
+
+#+BEGIN_SRC ipython :session futures :results none
+future_connections.to_csv(Files.future_training_data)
+#+END_SRC
 
 * Setup the Training and Testing Data
 ** Separating the Edges Without 'Future Connection' Values
@@ -285,53 +330,82 @@ print(x_test.describe())
 #+begin_example
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         2.747500e+05         2.747500e+05  2.747500e+05   
-mean          1.893057e-17        -9.263564e-17  8.317035e-17   
+mean          2.469766e-17         1.624098e-17  2.464594e-17   
 std           1.000002e+00         1.000002e+00  1.000002e+00   
-min          -3.761692e-01        -5.353489e-01 -4.294778e-01   
-25%          -3.761692e-01        -5.353489e-01 -4.294778e-01   
-50%          -3.761692e-01        -5.353489e-01 -4.294778e-01   
-75%          -7.690960e-02         1.941881e-01  4.955078e-03   
-max           6.186541e+01         2.645752e+01  4.458515e+01   
+min          -3.769493e-01        -5.307056e-01 -4.294212e-01   
+25%          -3.769493e-01        -5.307056e-01 -4.294212e-01   
+50%          -3.769493e-01        -5.307056e-01 -4.294212e-01   
+75%          -7.687495e-02         1.911122e-01  4.706022e-03   
+max           6.203408e+01         2.617655e+01  4.460797e+01   
 
        preferential_attachment  
 count             2.747500e+05  
-mean              2.658555e-17  
+mean             -2.193049e-17  
 std               1.000002e+00  
-min              -5.424644e-01  
-25%              -5.030307e-01  
-50%              -3.692991e-01  
-75%               7.475839e-02  
-max               4.268885e+01  
+min              -5.433939e-01  
+25%              -5.043521e-01  
+50%              -3.717248e-01  
+75%               7.610766e-02  
+max               4.248928e+01  
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         91584.000000         91584.000000  91584.000000   
-mean              0.003811             0.006728      0.003506   
-std               0.982502             1.024356      0.990961   
-min              -0.376169            -0.535349     -0.429478   
-25%              -0.376169            -0.535349     -0.429478   
-50%              -0.376169            -0.535349     -0.429478   
-75%              -0.070324             0.194188      0.009480   
-max              26.459370            26.457522     23.950543   
+mean              0.004797             0.002572      0.004604   
+std               0.993441             0.981883      0.992989   
+min              -0.376949            -0.530706     -0.429421   
+25%              -0.376949            -0.530706     -0.429421   
+50%              -0.376949            -0.530706     -0.429421   
+75%              -0.067455             0.201000      0.012482   
+max              48.658618            26.176552     36.434797   
 
        preferential_attachment  
 count             91584.000000  
-mean                  0.000573  
-std                   0.987831  
-min                  -0.542464  
-25%                  -0.504174  
-50%                  -0.371585  
-75%                   0.081045  
-max                  22.094182  
+mean                  0.006888  
+std                   1.006287  
+min                  -0.543394  
+25%                  -0.503204  
+50%                  -0.367132  
+75%                   0.087160  
+max                  42.887739  
 #+end_example
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
+
+#+BEGIN_SRC ipython :session futures :results none
+def pickle_it(thing, name):
+    """saves the thing as a pickle"""
+    with open(name, "wb") as writer:
+        pickle.dump(thing, writer)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+def unpickle_it(name):
+    """loads the object from the file-name
+
+    Args:
+     name (str): name of binary pickle file
+
+    Returns:
+     obj: unpickled object
+    """
+    with open(name, 'rb') as reader:
+        thing = pickle.load(reader)
+    return thing
+#+END_SRC
+
 *** RFECV with Logistic Regression
 #+BEGIN_SRC ipython :session futures :results none
-estimator = LogisticRegressionCV(n_jobs=-1)
-selector = RFECV(estimator, scoring='roc_auc',
-                 n_jobs=-1,
-                 cv=StratifiedKFold(Futures.folds))
-x_train_lr_rfs = selector.fit_transform(x_train, y_train)
-x_test_lr_rfs = selector.transform(x_test)
+if os.path.isfile(Training.x_train_lr_rfs):
+    x_train_lr_rfs = unpickle_it(Training.x_train_lr_rfs)
+    x_test_lr_rfs = unpickle_it(Training.x_test_lr_rfs)
+else:
+    estimator = LogisticRegressionCV(n_jobs=-1)
+    selector = RFECV(estimator, scoring='roc_auc',
+                     n_jobs=-1,
+                     cv=StratifiedKFold(Futures.folds))
+    x_train_lr_rfs = selector.fit_transform(x_train, y_train)
+    x_test_lr_rfs = selector.transform(x_test)
+    pickle_it(x_train_lr_rfs, Training.x_train_lr_rfs)
+    pickle_it(x_test_lr_rfs, Training.x_test_lr_rfs)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -346,10 +420,16 @@ It looks like it only discarded preferential attachment.
 *** RFECV with Extra Trees
 
 #+BEGIN_SRC ipython :session futures :results none
-estimator = ExtraTreesClassifier()
-selector = RFECV(estimator, scoring='roc_auc', n_jobs=-1, cv=StratifiedKFold(Futures.folds))
-x_train_trees_rfs = selector.fit_transform(x_train, y_train)
-x_test_trees_rfs = selector.transform(x_test)
+if os.path.isfile(Training.x_train_trees_rfs):
+    x_train_trees_rfs = unpickle_it(Training.x_train_trees_rfs)
+    x_test_trees_rfs = unpickle_it(Training.x_test_trees_rfs)
+else:
+    estimator = ExtraTreesClassifier()
+    selector = RFECV(estimator, scoring='roc_auc', n_jobs=-1, cv=StratifiedKFold(Futures.folds))
+    x_train_trees_rfs = selector.fit_transform(x_train, y_train)
+    x_test_trees_rfs = selector.transform(x_test)
+    pickle_it(x_train_trees_rfs, Training.x_train_trees_rfs)
+    pickle_it(x_test_trees_rfs, Training.x_test_trees_rfs)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -362,13 +442,19 @@ print(selector.ranking_)
 Strangely, the Extra Trees Classifier didn't remove any columns...
 *** Select Model Logistic Regression
 #+BEGIN_SRC ipython :session futures :results none
-estimator = LogisticRegressionCV(
-    n_jobs=-1, scoring='roc_auc',
-    cv=StratifiedKFold(Futures.folds)).fit(x_train,
-                                           y_train)
-selector = SelectFromModel(estimator, prefit=True)
-x_train_lr_sfm = selector.transform(x_train)
-x_test_lr_sfm = selector.transform(x_test)
+if os.path.isfile(Training.x_train_lr_sfm):
+    x_train_lr_sfm = unpickle_it(Training.x_train_lr_sfm)
+    x_test_lr_sfm = unpickle_it(Training.x_test_lr_sfm)
+else:
+    estimator = LogisticRegressionCV(
+        n_jobs=-1, scoring='roc_auc',
+        cv=StratifiedKFold(Futures.folds)).fit(x_train,
+                                               y_train)
+    selector = SelectFromModel(estimator, prefit=True)
+    x_train_lr_sfm = selector.transform(x_train)
+    x_test_lr_sfm = selector.transform(x_test)
+    pickle_it(x_train_lr_sfm, Training.x_train_lr_sfm)
+    pickle_it(x_test_lr_sfm, Training.x_test_lr_sfm)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -378,17 +464,23 @@ print(estimator.coef_)
 
 #+RESULTS:
 : (274750, 2)
-: [[ 0.41643397  0.67978168  0.91251998  0.07363884]]
+: [[ 0.42103148  0.666706    0.91835965  0.07331099]]
 
 This was more aggressive, cutting out half the features. It looks like it kept *Jaccard Coefficient* and *Adamic Adar* and got rid of *Resource Allocation* and *Preferential Attachment*.
 
 *** Select Model Extra Trees
 #+BEGIN_SRC ipython :session futures :results none
-estimator = ExtraTreesClassifier()
-estimator.fit(x_train, y_train)
-selector = SelectFromModel(estimator, prefit=True)
-x_train_trees_fsm = selector.transform(x_train)
-x_test_trees_fsm = selector.transform(x_test)
+if os.path.isfile(Training.x_train_trees_fsm):
+    x_train_trees_fsm = unpickle_it(Training.x_train_trees_fsm)
+    x_test_trees_fsm = unpickle_it(Training.x_test_trees_fsm)
+else:
+    estimator = ExtraTreesClassifier()
+    estimator.fit(x_train, y_train)
+    selector = SelectFromModel(estimator, prefit=True)
+    x_train_trees_fsm = selector.transform(x_train)
+    x_test_trees_fsm = selector.transform(x_test)
+    pickle_it(x_train_trees_fsm, Training.x_train_trees_fsm)
+    pickle_it(x_test_trees_fsm, Training.x_test_trees_fsm)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
@@ -397,14 +489,22 @@ print(x_train_trees_fsm.shape)
 #+END_SRC
 
 #+RESULTS:
-: [ 0.26944378  0.22198226  0.29872226  0.20985171]
+: [ 0.22957814  0.26597312  0.29719135  0.20725739]
 : (274750, 2)
 
 This seems much too aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see.
 
 * Fitting the Models
+** Persistent Storage
+   The outcomes will be stored in a set of identifiers and a dict that maps scores to identifiers.
 #+BEGIN_SRC ipython :session futures :results none
-best_outcomes = []
+if os.path.isfile(Files.future_model_selection):
+    with open(Files.future_model_section, 'rb') as pkl:
+        scores_identifiers = pickle.load(pkl)
+        identifiers = set(scores_identifiers.values())
+else:
+    scores_identifiers = {}
+    identifiers = set()
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none
@@ -425,61 +525,60 @@ def fit_and_print(estimator, x_train, x_test):
     print("Testing Score: {:.2f}".format(test_score))
     return model, test_score
 #+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+data_sets = {("extra trees", 'select from model') : (x_train_trees_fsm, x_test_trees_fsm),
+             ("extra trees", 'recursive feature selection') : (x_train_trees_rfs, x_test_trees_rfs),
+             ('logistic regression', "recursive feature selection") : (x_train_lr_rfs, x_test_lr_rfs),
+             ('logistic regression', "select from model") : (x_train_lr_sfm, x_test_lr_sfm)}
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+def fit_and_print_all(model, model_name):
+    """Fits the model against all data instances
+
+    Args:
+     model: model to fit to the data sets
+     model_name: identifier for the outcomes
+    """
+    for data_set, x in data_sets.items():        
+        selector, method = data_set
+        train, test = x
+        key = ','.join([model_name, selector, method])
+        if key not in identifiers:
+            print(key)
+            fitted, score = fit_and_print(model, train, test)
+            scores_identifiers[key] = score
+            identifiers.add(key)
+        else:
+            score = scores_identifiers[key]
+            print("{}: {:.2f}".format(key, score))
+        print()
+    best = max(scores_identifiers)
+    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+    with open(Files.future_model_selection, 'wb') as writer:
+        pickle.dump(scores_identifiers, writer)
+    return
+#+END_SRC
+
 ** Logistic Regression
-*** Logistic Regression with Recursive Feature Selection
 #+BEGIN_SRC ipython :session futures :results output
-outcomes = []
 logistic_model = LogisticRegressionCV(n_jobs=-1, scoring="roc_auc",
                                       solver='liblinear',
                                       cv=StratifiedKFold(Futures.folds))
-logistic_lr_rfs, score = fit_and_print(logistic_model, x_train_lr_rfs, x_test_lr_rfs)
-outcomes.append((score, "logistic LR RFS"))
+fit_and_print_all(logistic_model, "Logistic Regression")
 #+END_SRC
 
 #+RESULTS:
-: Mean Cross-Validation Score: 0.91
-: Testing Score: 0.96
-
-*** Logistic Regression with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-logistic_lr_mfs, score = fit_and_print(logistic_model, x_train_lr_sfm, x_test_lr_sfm)
-outcomes.append((score, "logistic LR SFM"))
-#+END_SRC
-
-#+RESULTS:
-: Mean Cross-Validation Score: 0.91
-: Testing Score: 0.96
-
-*** Extra Trees with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-logistic_trees_mfs, score = fit_and_print(logistic_model, x_train_trees_fsm, x_test_trees_fsm)
-outcomes.append((score, "Logistic Trees FSM"))
-#+END_SRC
-
-#+RESULTS:
-: Mean Cross-Validation Score: 0.91
-: Testing Score: 0.95
-
-*** Extra Trees with Recursive Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-logistic_trees_rfs, scores = fit_and_print(logistic_model, x_train_trees_rfs, x_test_trees_rfs)
-outcomes.append((score, "Logistic Trees RFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean Cross-Validation Score: 0.91
-: Testing Score: 0.96
-
-It doesn't look like any of them really did better than any other.
-*** Best Logistic Regression Model
-#+BEGIN_SRC ipython :session futures :results output
-best = max(outcomes)
-print(best)
-best_outcomes.append(best)
-#+END_SRC
-
-#+RESULTS:
-: (0.95852987421383651, 'logistic LR SFM')
+: Logistic Regression,extra trees,select from model: 0.92
+: 
+: Logistic Regression,extra trees,recursive feature selection: 0.92
+: 
+: Logistic Regression,logistic regression,select from model: 0.92
+: 
+: Logistic Regression,logistic regression,recursive feature selection: 0.92
+: 
+: Best Model So Far: Logistic Regression,logistic regression,select from model, Score=0.92
 
 ** Fit Grid Search
    Since the Logistic Regression had its own cross-validation I didn't use a grid search, but for the forests I'll use one to figure out the best number of estimators. I'll have to look into what the other parameters do to figure out whether they're going to be useful.
@@ -502,126 +601,52 @@ def fit_grid_search(estimator, parameters, x_train, x_test):
     search.fit(x_train, y_train)
     best_model = search.best_estimator_
     test_score = best_model.score(x_test, y_test)
-    print("Mean of Mean Cross-Validation Scores: {:.2f}".format(search.cv_results_["mean_train_score"].mean()))
-    print("Mean of Cross-Validation Score STDs: {:.2f}".format(search.cv_results_["std_train_score"].mean()))
+    print("Mean of Mean Cross-Validation Scores: {:.2f}".format(
+        search.cv_results_["mean_train_score"].mean()))
+    print("Mean of Cross-Validation Score STDs: {:.2f}".format(
+        search.cv_results_["std_train_score"].mean()))
     print("Testing Score: {:.2f}".format(test_score))
     return best_model, test_score
 #+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none
+def fit_grid_searches(estimator, parameters, name):
+    """Fits the estimator against all the data-sets
+
+    Args:
+     estimator: instance of model to test
+     parameters: dict of grid-search parameters
+     name: identifier for the model
+    """
+    for data_set, x in data_sets.items():
+        selector, method = data_set
+        train, test = x
+        key = ",".join([name, selector, method])
+        if key not in identifiers:
+            print(key)
+            fitted, score = fit_grid_search(estimator, parameters, train, test)
+            scores_identifiers[key] = score
+            identifiers.add(key)
+        else:
+            score = scores_identifiers[key]
+            print("{}: {:.2f}".format(key, score))
+        print()
+    best = max(scores_identifiers)
+    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+    with open(Files.future_model_selection, 'wb') as writer:
+        pickle.dump(scores_identifiers, writer)
+    return
+#+END_SRC
+
 ** Random Forests
 #+BEGIN_SRC ipython :session futures :results none
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 forest = RandomForestClassifier()
-forest_outcomes = []
+fit_grid_searches(forest, parameters, "Random Forest")
 #+END_SRC
-*** Logistic Regression Recursive Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-random_forest_lr_rfs, score = fit_grid_search(forest, parameters, x_train_lr_rfs, x_test_lr_rfs)
-forest_outcomes.append((score, "Random Forest, LR RFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.96
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.96
-
-*** Logistic Regression with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-random_forest_lr_sfm, score = fit_grid_search(forest, parameters, x_train_lr_sfm, x_test_lr_sfm)
-forest_outcomes.append((score, "Random Forest, LR MFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.96
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.95
-
-*** Extra Trees with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-random_forest_trees_sfm, score = fit_grid_search(forest, parameters, x_train_trees_fsm, x_test_trees_fsm)
-forest_outcomes.append((score, "Random Forest, Trees MFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.94
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.95
-
-*** Extra Trees with Recursive Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-random_forest_trees_rfs, score = fit_grid_search(forest, parameters, x_train_trees_rfs, x_test_trees_rfs)
-forest_outcomes.append((score, "Random Forest, Trees RFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.97
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.96
-
-*** Best Random Forest
-#+BEGIN_SRC ipython :session futures :results output
-best = max(forest_outcomes)
-print(best)
-best_outcomes.append(best)
-#+END_SRC
-
-#+RESULTS:
-: (0.95761268343815509, 'Random Forest, Trees RFS')
-
 ** Extra Trees
 #+BEGIN_SRC ipython :session futures :results none
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 trees = ExtraTreesClassifier()
-trees_outcomes = []
-#+END_SRC
-*** Logistic Regression with Recursive Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-extra_trees_lr_rfs, score = fit_grid_search(trees, parameters, x_train_lr_rfs, x_test_lr_rfs)
-trees_outcomes.append((score, "Extra Trees, LR RFS"))
-#+END_SRC
-*** Logistic Regression with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-extra_trees_lr_sfm, score = fit_grid_search(trees, parameters, x_train_lr_sfm, x_test_lr_sfm)
-trees_outcomes.append((score, "Extra Trees, LR MFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.96
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.95
-
-*** Extra Trees with Model Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-extra_trees_trees_sfm, score = fit_grid_search(trees, parameters, x_train_trees_fsm, x_test_trees_fsm)
-trees.append((score, "Extra Trees, Trees MFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.94
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.95
-
-*** Extra Trees with Recursive Feature Selection
-#+BEGIN_SRC ipython :session futures :results output
-extra_trees_trees_rfs, score = fit_grid_search(trees, parameters, x_train_trees_rfs, x_test_trees_rfs)
-trees.append((score, "Extra Trees, Trees RFS"))
-#+END_SRC
-
-#+RESULTS:
-: Mean of Mean Cross-Validation Scores: 0.97
-: Mean of Cross-Validation Score STDs: 0.00
-: Testing Score: 0.96
-
-*** Best Extra Trees
-#+BEGIN_SRC ipython :session futures :results output
-best = max(extra_trees)
-print(best)
-best_outcomes.append(best)
-#+END_SRC
-
-#+RESULTS:
-: (0.95761268343815509, 'Random Forest, Trees RFS')
-
-* Best Model
-#+BEGIN_SRC ipython :session futures :results output
-print(max(best_outcomes))
+fit_grid_searches(forest, parameters, "Extra Trees")
 #+END_SRC
