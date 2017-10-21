@@ -1,10 +1,75 @@
 #+TITLE: Predicting Future Connections
 
 This will select a model to predict whether an edge in the email-network that currently doesn't have an edge will have one in the future.
+* Tangle
+#+BEGIN_SRC python :tangle future_model_selection.py
+<<imports>>
 
+<<futures>>
+
+<<data-names>>
+
+<<files>>
+
+<<training>>
+
+<<load-graph>>
+
+<<load-future>>
+
+<<add-networkx-data>>
+
+<<future-connections>>
+
+<<jaccard-coefficient>>
+
+<<adamic-adar>>
+
+<<preferential-attachment>>
+
+<<save-future-connections>>
+
+<<split-future-connections>>
+
+<<train-test-predict>>
+
+<<train-test-split>>
+
+<<scaled-data>>
+
+<<pickle-it>>
+
+<<unpickle-it>>
+
+<<lr-rfs>>
+
+<<trees-rfs>>
+
+<<lr-sfm>>
+
+<<trees-fsm>>
+
+<<scores-identifiers>>
+
+<<fit-and-print>>
+
+<<data-sets>>
+
+<<fit-and-print-all>>
+
+<<logistic-model>>
+
+<<fit-grid-search>>
+
+<<fit-grid-searches>>
+
+<<random-forests>>
+
+<<extra-trees>>
+#+END_SRC
 * Imports
 
-#+BEGIN_SRC ipython :session futures :results none 
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref imports
 # python standard library
 import pickle
 
@@ -37,7 +102,7 @@ seaborn.set_style("whitegrid")
 
 * Constants
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref futures
 class Futures(object):
     target = "Future Connection"
     data_file = "Future_Connections.csv"
@@ -46,7 +111,7 @@ class Futures(object):
     folds = 10
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref data-names
 class DataNames(object):
     resource_allocation = 'resource_allocation'
     jaccard = 'jaccard_coefficient'
@@ -54,7 +119,7 @@ class DataNames(object):
     preferential = "preferential_attachment"
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref files
 class Files(object):
     """File-names for data persistence"""
     future_training_data = 'future_training_data.csv'
@@ -62,7 +127,7 @@ class Files(object):
     future_model_selection = "future_model_cvs.pkl"
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref training
 class Training(object):
     """data-pickles"""
     x_train_lr_rfs = "x_train_lr_rfs.pkl"
@@ -78,7 +143,7 @@ class Training(object):
 * The Email-Graph
   To get the features for the models we'll need to use the email-graph.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref load-graph
 email = networkx.read_gpickle(Futures.graph_file)
 #+END_SRC
 
@@ -110,7 +175,7 @@ Org-mode converted it to a table, but it's actually a CSV. The first line of dat
 #+END_EXAMPLE
 
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref load-future
 future_connections_pre_loaded = os.path.isfile(Files.future_training_data)
 if future_connections_pre_loaded:
     future_connections = pandas.read_csv(Files.future_training_data,
@@ -147,7 +212,7 @@ seaborn.countplot(x=Futures.target, data=future_connections)
 ** Add Networkx Data
    This is a function to get networkx data and add it to the data-frame. It won't work for the community-based algorithms.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref add-networkx-data
 def add_networkx_data(adder, name, graph=email, frame=future_connections):
     """Adds networkx data to the frame
 
@@ -171,7 +236,7 @@ def add_networkx_data(adder, name, graph=email, frame=future_connections):
 
 ** Adding A Resource Allocation Index
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref future-connections
 if not future_connections_pre_loaded:
     add_networkx_data(networkx.resource_allocation_index,
                       DataNames.resource_allocation)
@@ -189,7 +254,7 @@ print(future_connections.head(1))
 : (6, 840)     2.110314                     2070  
 
 ** Adding the Jaccard Coefficient
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref jaccard-coefficient
 if not future_connections_pre_loaded:
     add_networkx_data(networkx.jaccard_coefficient, DataNames.jaccard)
 #+END_SRC
@@ -207,7 +272,7 @@ print(future_connections.head(1))
 
 ** Adamic Adar
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref adamic-adar
 if not future_connections_pre_loaded:
     add_networkx_data(networkx.adamic_adar_index, DataNames.adamic)
 #+END_SRC
@@ -224,7 +289,7 @@ print(future_connections.head(1))
 : (6, 840)     2.110314                     2070  
 
 ** Preferential Attachment
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref preferential-attachment
 if not future_connections_pre_loaded:
     add_networkx_data(networkx.preferential_attachment, DataNames.preferential)
 #+END_SRC
@@ -253,7 +318,7 @@ These three all require communities for them to work (so I'm skipping them):
 
 ** Saving the Data
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref save-future-connections
 future_connections.to_csv(Files.future_training_data)
 #+END_SRC
 
@@ -261,7 +326,7 @@ future_connections.to_csv(Files.future_training_data)
 ** Separating the Edges Without 'Future Connection' Values
    We are going to train on the values in the data with predictions and then make predictions for those that don't. For model selection we don't need the set missing predictions, but I'll separate it out anyway to be complete.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref split-future-connections
 prediction_set = future_connections[future_connections[Futures.target].isnull()]
 training_set = future_connections[future_connections[Futures.target].notnull()]
 #+END_SRC
@@ -277,7 +342,7 @@ assert len(prediction_set) + len(training_set) == len(future_connections)
 : (366334, 5)
 
 ** Separate the Target and Training Sets
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref train-test-predict
 non_target = [column for column in future_connections.columns
               if column != Futures.target]
 training = training_set[non_target]
@@ -291,7 +356,7 @@ assert len(training) == len(testing)
 #+END_SRC
 
 ** Setting Up the Testing and Training Sets
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref train-test-split
 x_train, x_test, y_train, y_test = train_test_split(training, testing, stratify=testing)
 #+END_SRC
 
@@ -310,9 +375,9 @@ seaborn.countplot(y_test)
 [[file:/tmp/future_testing.png]]
 
 ** Scaling the Data
-   To enable the use of linear models I'm going to scale the data so the mean is 0 and the variace is 1.
+   To enable the use of linear models I'm going to scale the data so the mean is 0 and the variance is 1.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref scaled-data
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
@@ -370,14 +435,14 @@ max                  42.887739
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref pickle-it
 def pickle_it(thing, name):
     """saves the thing as a pickle"""
     with open(name, "wb") as writer:
         pickle.dump(thing, writer)
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref unpickle-it
 def unpickle_it(name):
     """loads the object from the file-name
 
@@ -393,7 +458,7 @@ def unpickle_it(name):
 #+END_SRC
 
 *** RFECV with Logistic Regression
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref lr-rfs
 if os.path.isfile(Training.x_train_lr_rfs):
     x_train_lr_rfs = unpickle_it(Training.x_train_lr_rfs)
     x_test_lr_rfs = unpickle_it(Training.x_test_lr_rfs)
@@ -419,7 +484,7 @@ It looks like it only discarded preferential attachment.
 
 *** RFECV with Extra Trees
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref trees-rfs
 if os.path.isfile(Training.x_train_trees_rfs):
     x_train_trees_rfs = unpickle_it(Training.x_train_trees_rfs)
     x_test_trees_rfs = unpickle_it(Training.x_test_trees_rfs)
@@ -441,7 +506,7 @@ print(selector.ranking_)
 
 Strangely, the Extra Trees Classifier didn't remove any columns...
 *** Select Model Logistic Regression
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref lr-sfm
 if os.path.isfile(Training.x_train_lr_sfm):
     x_train_lr_sfm = unpickle_it(Training.x_train_lr_sfm)
     x_test_lr_sfm = unpickle_it(Training.x_test_lr_sfm)
@@ -469,7 +534,7 @@ print(estimator.coef_)
 This was more aggressive, cutting out half the features. It looks like it kept *Jaccard Coefficient* and *Adamic Adar* and got rid of *Resource Allocation* and *Preferential Attachment*.
 
 *** Select Model Extra Trees
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref trees-fsm
 if os.path.isfile(Training.x_train_trees_fsm):
     x_train_trees_fsm = unpickle_it(Training.x_train_trees_fsm)
     x_test_trees_fsm = unpickle_it(Training.x_test_trees_fsm)
@@ -497,7 +562,7 @@ This seems much too aggressive, keeping only the *Adamic Adar* feature... But ma
 * Fitting the Models
 ** Persistent Storage
    The outcomes will be stored in a set of identifiers and a dict that maps scores to identifiers.
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref scores-identifiers
 if os.path.isfile(Files.future_model_selection):
     with open(Files.future_model_section, 'rb') as pkl:
         scores_identifiers = pickle.load(pkl)
@@ -507,7 +572,7 @@ else:
     identifiers = set()
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-and-print
 def fit_and_print(estimator, x_train, x_test):
     """fits the estimator to the data
 
@@ -526,14 +591,14 @@ def fit_and_print(estimator, x_train, x_test):
     return model, test_score
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref data-sets
 data_sets = {("extra trees", 'select from model') : (x_train_trees_fsm, x_test_trees_fsm),
              ("extra trees", 'recursive feature selection') : (x_train_trees_rfs, x_test_trees_rfs),
              ('logistic regression', "recursive feature selection") : (x_train_lr_rfs, x_test_lr_rfs),
              ('logistic regression', "select from model") : (x_train_lr_sfm, x_test_lr_sfm)}
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-and-print-all
 def fit_and_print_all(model, model_name):
     """Fits the model against all data instances
 
@@ -562,7 +627,7 @@ def fit_and_print_all(model, model_name):
 #+END_SRC
 
 ** Logistic Regression
-#+BEGIN_SRC ipython :session futures :results output
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref logistic-model
 logistic_model = LogisticRegressionCV(n_jobs=-1, scoring="roc_auc",
                                       solver='liblinear',
                                       cv=StratifiedKFold(Futures.folds))
@@ -583,7 +648,7 @@ fit_and_print_all(logistic_model, "Logistic Regression")
 ** Fit Grid Search
    Since the Logistic Regression had its own cross-validation I didn't use a grid search, but for the forests I'll use one to figure out the best number of estimators. I'll have to look into what the other parameters do to figure out whether they're going to be useful.
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-grid-search
 def fit_grid_search(estimator, parameters, x_train, x_test):
     """Fits the estimator using grid search
 
@@ -609,7 +674,7 @@ def fit_grid_search(estimator, parameters, x_train, x_test):
     return best_model, test_score
 #+END_SRC
 
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-grid-searches
 def fit_grid_searches(estimator, parameters, name):
     """Fits the estimator against all the data-sets
 
@@ -639,13 +704,13 @@ def fit_grid_searches(estimator, parameters, name):
 #+END_SRC
 
 ** Random Forests
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref random-forests
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 forest = RandomForestClassifier()
 fit_grid_searches(forest, parameters, "Random Forest")
 #+END_SRC
 ** Extra Trees
-#+BEGIN_SRC ipython :session futures :results none
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref extra-trees
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 trees = ExtraTreesClassifier()
 fit_grid_searches(forest, parameters, "Extra Trees")
