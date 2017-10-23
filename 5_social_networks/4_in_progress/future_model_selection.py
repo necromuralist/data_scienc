@@ -1,10 +1,13 @@
 # python standard library
+import os
 import pickle
 
 # pypi
 import networkx
 import pandas
 import seaborn
+
+from numba import jit
 
 from sklearn.ensemble import (
     ExtraTreesClassifier,
@@ -49,8 +52,8 @@ class Training(object):
     x_test_trees_rfs = "x_test_trees_rfs.pkl"
     x_train_lr_sfm = "x_train_lr_sfm.pkl"
     x_test_lr_sfm = "x_test_lr_sfm.pkl"
-    x_train_trees_fsm = "x_train_trees_fsm.pkl"
-    x_test_trees_fsm = "x_test_trees_fsm.pkl"
+    x_train_trees_sfm = "x_train_trees_sfm.pkl"
+    x_test_trees_sfm = "x_test_trees_sfm.pkl"
 
 email = networkx.read_gpickle(Futures.graph_file)
 
@@ -172,25 +175,23 @@ else:
     pickle_it(x_train_lr_sfm, Training.x_train_lr_sfm)
     pickle_it(x_test_lr_sfm, Training.x_test_lr_sfm)
 
-if os.path.isfile(Training.x_train_trees_fsm):
-    x_train_trees_fsm = unpickle_it(Training.x_train_trees_fsm)
-    x_test_trees_fsm = unpickle_it(Training.x_test_trees_fsm)
+if os.path.isfile(Training.x_train_trees_sfm):
+    x_train_trees_sfm = unpickle_it(Training.x_train_trees_sfm)
+    x_test_trees_sfm = unpickle_it(Training.x_test_trees_sfm)
 else:
     estimator = ExtraTreesClassifier()
     estimator.fit(x_train, y_train)
     selector = SelectFromModel(estimator, prefit=True)
-    x_train_trees_fsm = selector.transform(x_train)
-    x_test_trees_fsm = selector.transform(x_test)
-    pickle_it(x_train_trees_fsm, Training.x_train_trees_fsm)
-    pickle_it(x_test_trees_fsm, Training.x_test_trees_fsm)
+    x_train_trees_sfm = selector.transform(x_train)
+    x_test_trees_sfm = selector.transform(x_test)
+    pickle_it(x_train_trees_sfm, Training.x_train_trees_sfm)
+    pickle_it(x_test_trees_sfm, Training.x_test_trees_sfm)
 
 if os.path.isfile(Files.future_model_selection):
-    with open(Files.future_model_section, 'rb') as pkl:
-        scores_identifiers = pickle.load(pkl)
-        identifiers = set(scores_identifiers.values())
+    with open(Files.future_model_selection, 'rb') as pkl:
+        scores = pickle.load(pkl)
 else:
-    scores_identifiers = {}
-    identifiers = set()
+    scores = {}
 
 def fit_and_print(estimator, x_train, x_test):
     """fits the estimator to the data
@@ -209,10 +210,25 @@ def fit_and_print(estimator, x_train, x_test):
     print("Testing Score: {:.2f}".format(test_score))
     return model, test_score
 
-data_sets = {("extra trees", 'select from model') : (x_train_trees_fsm, x_test_trees_fsm),
+data_sets = {("extra trees", 'select from model') : (x_train_trees_sfm, x_test_trees_sfm),
              ("extra trees", 'recursive feature selection') : (x_train_trees_rfs, x_test_trees_rfs),
              ('logistic regression', "recursive feature selection") : (x_train_lr_rfs, x_test_lr_rfs),
              ('logistic regression', "select from model") : (x_train_lr_sfm, x_test_lr_sfm)}
+
+def key_by_value(source, search_value):
+    """Find the key in a dict that matches a value
+    
+    Args:
+     source (dict): dictionary with value to search for
+     search_value: value to search for
+
+    Returns:
+     object: key in source that matched value
+    """
+    for key, value in source.items():
+        if value == search_value:
+            return key
+    return
 
 def fit_and_print_all(model, model_name):
     """Fits the model against all data instances
@@ -221,23 +237,27 @@ def fit_and_print_all(model, model_name):
      model: model to fit to the data sets
      model_name: identifier for the outcomes
     """
-    for data_set, x in data_sets.items():        
+    for data_set, x in data_sets.items():
         selector, method = data_set
         train, test = x
         key = ','.join([model_name, selector, method])
-        if key not in identifiers:
+        print("Training Shape: {}".format(train.shape))
+        if key not in scores:
             print(key)
             fitted, score = fit_and_print(model, train, test)
-            scores_identifiers[key] = score
-            identifiers.add(key)
+            scores[key] = score
         else:
-            score = scores_identifiers[key]
-            print("{}: {:.2f}".format(key, score))
+            score = scores[key]
+            print("{}: {:.3f}".format(key, score))
         print()
-    best = max(scores_identifiers)
-    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+
+    best_score = max(scores.values())
+    best_key = key_by_value(scores, best_score)
+    print("Best Model So Far: {}, Score={:.2f}".format(
+        best_key,
+        best_score))
     with open(Files.future_model_selection, 'wb') as writer:
-        pickle.dump(scores_identifiers, writer)
+        pickle.dump(scores, writer)
     return
 
 logistic_model = LogisticRegressionCV(n_jobs=-1, scoring="roc_auc",
@@ -269,7 +289,7 @@ def fit_grid_search(estimator, parameters, x_train, x_test):
     print("Testing Score: {:.2f}".format(test_score))
     return best_model, test_score
 
-def fit_grid_searches(estimator, parameters, name):
+def fit_grid_searches(estimator, parameters, name, data_sets=data_sets):
     """Fits the estimator against all the data-sets
 
     Args:
@@ -281,24 +301,26 @@ def fit_grid_searches(estimator, parameters, name):
         selector, method = data_set
         train, test = x
         key = ",".join([name, selector, method])
-        if key not in identifiers:
+        if key not in scores:
             print(key)
             fitted, score = fit_grid_search(estimator, parameters, train, test)
-            scores_identifiers[key] = score
-            identifiers.add(key)
+            scores[key] = score
         else:
-            score = scores_identifiers[key]
+            score = scores[key]
             print("{}: {:.2f}".format(key, score))
         print()
-    best = max(scores_identifiers)
-    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+    import pudb; pudb.set_trace()
+    best = max(scores.items())
+    best_key = key_by_value(scores, best)
+    print("Best Model So Far: {}, Score={:.2f}".format(best_key, best))
     with open(Files.future_model_selection, 'wb') as writer:
-        pickle.dump(scores_identifiers, writer)
+        pickle.dump(scores, writer)
     return
 
-parameters = dict(n_estimators = list(range(10, 200, 10)))
+parameters = dict(n_estimators = list(range(10, 20, 10)))
 forest = RandomForestClassifier()
-fit_grid_searches(forest, parameters, "Random Forest")
+first = {("extra trees", 'select from model'): data_sets[("extra trees", 'select from model')]}
+fit_grid_searches(forest, parameters, "Random Forest", first)
 
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 trees = ExtraTreesClassifier()

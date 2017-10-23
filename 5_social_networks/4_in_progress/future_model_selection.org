@@ -55,6 +55,8 @@ This will select a model to predict whether an edge in the email-network that cu
 
 <<data-sets>>
 
+<<key-by-value>>
+
 <<fit-and-print-all>>
 
 <<logistic-model>>
@@ -71,12 +73,15 @@ This will select a model to predict whether an edge in the email-network that cu
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref imports
 # python standard library
+import os
 import pickle
 
 # pypi
 import networkx
 import pandas
 import seaborn
+
+from numba import jit
 
 from sklearn.ensemble import (
     ExtraTreesClassifier,
@@ -136,8 +141,8 @@ class Training(object):
     x_test_trees_rfs = "x_test_trees_rfs.pkl"
     x_train_lr_sfm = "x_train_lr_sfm.pkl"
     x_test_lr_sfm = "x_test_lr_sfm.pkl"
-    x_train_trees_fsm = "x_train_trees_fsm.pkl"
-    x_test_trees_fsm = "x_test_trees_fsm.pkl"
+    x_train_trees_sfm = "x_train_trees_sfm.pkl"
+    x_test_trees_sfm = "x_test_trees_sfm.pkl"
 #+END_SRC
 
 * The Email-Graph
@@ -395,42 +400,42 @@ print(x_test.describe())
 #+begin_example
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         2.747500e+05         2.747500e+05  2.747500e+05   
-mean          2.469766e-17         1.624098e-17  2.464594e-17   
+mean         -1.387207e-16         1.851290e-16  2.937858e-17   
 std           1.000002e+00         1.000002e+00  1.000002e+00   
-min          -3.769493e-01        -5.307056e-01 -4.294212e-01   
-25%          -3.769493e-01        -5.307056e-01 -4.294212e-01   
-50%          -3.769493e-01        -5.307056e-01 -4.294212e-01   
-75%          -7.687495e-02         1.911122e-01  4.706022e-03   
-max           6.203408e+01         2.617655e+01  4.460797e+01   
+min          -3.787297e-01        -5.354150e-01 -4.318590e-01   
+25%          -3.787297e-01        -5.354150e-01 -4.318590e-01   
+50%          -3.787297e-01        -5.354150e-01 -4.318590e-01   
+75%          -7.475358e-02         1.925208e-01  5.394533e-03   
+max           6.211440e+01         2.639821e+01  4.474989e+01   
 
        preferential_attachment  
 count             2.747500e+05  
-mean             -2.193049e-17  
+mean              9.310114e-18  
 std               1.000002e+00  
-min              -5.433939e-01  
-25%              -5.043521e-01  
-50%              -3.717248e-01  
-75%               7.610766e-02  
-max               4.248928e+01  
+min              -5.441733e-01  
+25%              -5.046704e-01  
+50%              -3.707043e-01  
+75%               7.813964e-02  
+max               4.276296e+01  
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         91584.000000         91584.000000  91584.000000   
-mean              0.004797             0.002572      0.004604   
-std               0.993441             0.981883      0.992989   
-min              -0.376949            -0.530706     -0.429421   
-25%              -0.376949            -0.530706     -0.429421   
-50%              -0.376949            -0.530706     -0.429421   
-75%              -0.067455             0.201000      0.012482   
-max              48.658618            26.176552     36.434797   
+mean             -0.000335             0.001749      0.000372   
+std               0.998718             1.015667      1.005801   
+min              -0.378730            -0.535415     -0.431859   
+25%              -0.378730            -0.535415     -0.431859   
+50%              -0.378730            -0.535415     -0.431859   
+75%              -0.078823             0.192521      0.003380   
+max              38.265508            26.398209     33.492922   
 
        preferential_attachment  
 count             91584.000000  
-mean                  0.006888  
-std                   1.006287  
-min                  -0.543394  
-25%                  -0.503204  
-50%                  -0.367132  
-75%                   0.087160  
-max                  42.887739  
+mean                 -0.002455  
+std                   0.994869  
+min                  -0.544173  
+25%                  -0.505243  
+50%                  -0.372994  
+75%                   0.074132  
+max                  36.207211  
 #+end_example
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
@@ -535,41 +540,39 @@ This was more aggressive, cutting out half the features. It looks like it kept *
 
 *** Select Model Extra Trees
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref trees-fsm
-if os.path.isfile(Training.x_train_trees_fsm):
-    x_train_trees_fsm = unpickle_it(Training.x_train_trees_fsm)
-    x_test_trees_fsm = unpickle_it(Training.x_test_trees_fsm)
+if os.path.isfile(Training.x_train_trees_sfm):
+    x_train_trees_sfm = unpickle_it(Training.x_train_trees_sfm)
+    x_test_trees_sfm = unpickle_it(Training.x_test_trees_sfm)
 else:
     estimator = ExtraTreesClassifier()
     estimator.fit(x_train, y_train)
     selector = SelectFromModel(estimator, prefit=True)
-    x_train_trees_fsm = selector.transform(x_train)
-    x_test_trees_fsm = selector.transform(x_test)
-    pickle_it(x_train_trees_fsm, Training.x_train_trees_fsm)
-    pickle_it(x_test_trees_fsm, Training.x_test_trees_fsm)
+    x_train_trees_sfm = selector.transform(x_train)
+    x_test_trees_sfm = selector.transform(x_test)
+    pickle_it(x_train_trees_sfm, Training.x_train_trees_sfm)
+    pickle_it(x_test_trees_sfm, Training.x_test_trees_sfm)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results output
 print(estimator.feature_importances_)
-print(x_train_trees_fsm.shape)
+print(x_train_trees_sfm.shape)
 #+END_SRC
 
 #+RESULTS:
-: [ 0.22957814  0.26597312  0.29719135  0.20725739]
-: (274750, 2)
+: [ 0.27220102  0.25318735  0.26470865  0.20990298]
+: (274750, 3)
 
-This seems much too aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see.
+This is sometimes more aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see. Then again, other times it isn't as aggressive, only trimming two columns, and this tiem it only trimmed one...
 
 * Fitting the Models
 ** Persistent Storage
-   The outcomes will be stored in a set of identifiers and a dict that maps scores to identifiers.
+   The outcomes will be stored in a dictionary called =scores= with descriptions of the best model and feature-selection mapped to their testing-score.
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref scores-identifiers
 if os.path.isfile(Files.future_model_selection):
-    with open(Files.future_model_section, 'rb') as pkl:
-        scores_identifiers = pickle.load(pkl)
-        identifiers = set(scores_identifiers.values())
+    with open(Files.future_model_selection, 'rb') as pkl:
+        scores = pickle.load(pkl)
 else:
-    scores_identifiers = {}
-    identifiers = set()
+    scores = {}
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-and-print
@@ -592,10 +595,27 @@ def fit_and_print(estimator, x_train, x_test):
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref data-sets
-data_sets = {("extra trees", 'select from model') : (x_train_trees_fsm, x_test_trees_fsm),
+data_sets = {("extra trees", 'select from model') : (x_train_trees_sfm, x_test_trees_sfm),
              ("extra trees", 'recursive feature selection') : (x_train_trees_rfs, x_test_trees_rfs),
              ('logistic regression', "recursive feature selection") : (x_train_lr_rfs, x_test_lr_rfs),
              ('logistic regression', "select from model") : (x_train_lr_sfm, x_test_lr_sfm)}
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results none :noweb-ref key-by-value
+def key_by_value(source, search_value):
+    """Find the key in a dict that matches a value
+    
+    Args:
+     source (dict): dictionary with value to search for
+     search_value: value to search for
+
+    Returns:
+     object: key in source that matched value
+    """
+    for key, value in source.items():
+        if value == search_value:
+            return key
+    return
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-and-print-all
@@ -606,23 +626,27 @@ def fit_and_print_all(model, model_name):
      model: model to fit to the data sets
      model_name: identifier for the outcomes
     """
-    for data_set, x in data_sets.items():        
+    for data_set, x in data_sets.items():
         selector, method = data_set
         train, test = x
         key = ','.join([model_name, selector, method])
-        if key not in identifiers:
+        print("Training Shape: {}".format(train.shape))
+        if key not in scores:
             print(key)
             fitted, score = fit_and_print(model, train, test)
-            scores_identifiers[key] = score
-            identifiers.add(key)
+            scores[key] = score
         else:
-            score = scores_identifiers[key]
-            print("{}: {:.2f}".format(key, score))
+            score = scores[key]
+            print("{}: {:.3f}".format(key, score))
         print()
-    best = max(scores_identifiers)
-    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+
+    best_score = max(scores.values())
+    best_key = key_by_value(scores, best_score)
+    print("Best Model So Far: {}, Score={:.2f}".format(
+        best_key,
+        best_score))
     with open(Files.future_model_selection, 'wb') as writer:
-        pickle.dump(scores_identifiers, writer)
+        pickle.dump(scores, writer)
     return
 #+END_SRC
 
@@ -635,15 +659,21 @@ fit_and_print_all(logistic_model, "Logistic Regression")
 #+END_SRC
 
 #+RESULTS:
-: Logistic Regression,extra trees,select from model: 0.92
-: 
-: Logistic Regression,extra trees,recursive feature selection: 0.92
-: 
-: Logistic Regression,logistic regression,select from model: 0.92
-: 
-: Logistic Regression,logistic regression,recursive feature selection: 0.92
-: 
-: Best Model So Far: Logistic Regression,logistic regression,select from model, Score=0.92
+#+begin_example
+Training Shape: (274750, 3)
+Logistic Regression,extra trees,select from model: 0.958
+
+Training Shape: (274750, 2)
+Logistic Regression,logistic regression,select from model: 0.920
+
+Training Shape: (274750, 4)
+Logistic Regression,extra trees,recursive feature selection: 0.920
+
+Training Shape: (274750, 3)
+Logistic Regression,logistic regression,recursive feature selection: 0.920
+
+Best Model So Far: Logistic Regression,extra trees,select from model, Score=0.96
+#+end_example
 
 ** Fit Grid Search
    Since the Logistic Regression had its own cross-validation I didn't use a grid search, but for the forests I'll use one to figure out the best number of estimators. I'll have to look into what the other parameters do to figure out whether they're going to be useful.
@@ -675,7 +705,7 @@ def fit_grid_search(estimator, parameters, x_train, x_test):
 #+END_SRC
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref fit-grid-searches
-def fit_grid_searches(estimator, parameters, name):
+def fit_grid_searches(estimator, parameters, name, data_sets=data_sets):
     """Fits the estimator against all the data-sets
 
     Args:
@@ -687,31 +717,43 @@ def fit_grid_searches(estimator, parameters, name):
         selector, method = data_set
         train, test = x
         key = ",".join([name, selector, method])
-        if key not in identifiers:
+        if key not in scores:
             print(key)
             fitted, score = fit_grid_search(estimator, parameters, train, test)
-            scores_identifiers[key] = score
-            identifiers.add(key)
+            scores[key] = score
         else:
-            score = scores_identifiers[key]
+            score = scores[key]
             print("{}: {:.2f}".format(key, score))
         print()
-    best = max(scores_identifiers)
-    print("Best Model So Far: {}, Score={:.2f}".format(best, scores_identifiers[best]))
+    best = max(scores.values())
+    best_key = key_by_value(scores, best)
+    print("Best Model So Far: {}, Score={:.2f}".format(best_key, best))
     with open(Files.future_model_selection, 'wb') as writer:
-        pickle.dump(scores_identifiers, writer)
+        pickle.dump(scores, writer)
     return
 #+END_SRC
 
 ** Random Forests
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref random-forests
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref random-forests
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 forest = RandomForestClassifier()
 fit_grid_searches(forest, parameters, "Random Forest")
 #+END_SRC
+
+#+RESULTS:
+: Random Forest,extra trees,select from model: 0.96
+: 
+: Random Forest,logistic regression,select from model: 0.91
+: 
+: Random Forest,extra trees,recursive feature selection: 0.92
+: 
+: Random Forest,logistic regression,recursive feature selection: 0.92
+: 
+: Best Model So Far: Logistic Regression,extra trees,select from model, Score=0.96
+
 ** Extra Trees
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref extra-trees
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 trees = ExtraTreesClassifier()
-fit_grid_searches(forest, parameters, "Extra Trees")
+fit_grid_searches(trees, parameters, "Extra Trees")
 #+END_SRC
