@@ -69,6 +69,9 @@ This will select a model to predict whether an edge in the email-network that cu
 
 <<extra-trees>>
 #+END_SRC
+
+#+RESULTS:
+
 * Imports
 
 #+BEGIN_SRC ipython :session futures :results none :noweb-ref imports
@@ -365,6 +368,11 @@ assert len(training) == len(testing)
 x_train, x_test, y_train, y_test = train_test_split(training, testing, stratify=testing)
 #+END_SRC
 
+#+BEGIN_SRC ipython :session futures :results output
+print(x_train.shape)
+print(x_test.shape)
+#+END_SRC
+
 #+BEGIN_SRC ipython :session futures :file /tmp/future_training.png
 seaborn.countplot(y_train)
 #+END_SRC
@@ -400,42 +408,42 @@ print(x_test.describe())
 #+begin_example
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         2.747500e+05         2.747500e+05  2.747500e+05   
-mean         -1.387207e-16         1.851290e-16  2.937858e-17   
+mean         -1.089025e-16         3.651634e-17 -9.568728e-17   
 std           1.000002e+00         1.000002e+00  1.000002e+00   
-min          -3.787297e-01        -5.354150e-01 -4.318590e-01   
-25%          -3.787297e-01        -5.354150e-01 -4.318590e-01   
-50%          -3.787297e-01        -5.354150e-01 -4.318590e-01   
-75%          -7.475358e-02         1.925208e-01  5.394533e-03   
-max           6.211440e+01         2.639821e+01  4.474989e+01   
+min          -3.775839e-01        -5.344810e-01 -4.308986e-01   
+25%          -3.775839e-01        -5.344810e-01 -4.308986e-01   
+50%          -3.775839e-01        -5.344810e-01 -4.308986e-01   
+75%          -7.607929e-02         1.908992e-01  4.564250e-03   
+max           6.172976e+01         2.630459e+01  4.455594e+01   
 
        preferential_attachment  
 count             2.747500e+05  
-mean              9.310114e-18  
+mean              1.944779e-17  
 std               1.000002e+00  
-min              -5.441733e-01  
-25%              -5.046704e-01  
-50%              -3.707043e-01  
-75%               7.813964e-02  
-max               4.276296e+01  
+min              -5.419842e-01  
+25%              -5.027424e-01  
+50%              -3.696617e-01  
+75%               7.223459e-02  
+max               4.247892e+01  
        resource_allocation  jaccard_coefficient   adamic_adar  \
 count         91584.000000         91584.000000  91584.000000   
-mean             -0.000335             0.001749      0.000372   
-std               0.998718             1.015667      1.005801   
-min              -0.378730            -0.535415     -0.431859   
-25%              -0.378730            -0.535415     -0.431859   
-50%              -0.378730            -0.535415     -0.431859   
-75%              -0.078823             0.192521      0.003380   
-max              38.265508            26.398209     33.492922   
+mean             -0.005102            -0.002040     -0.003240   
+std               0.973764             1.001659      0.988479   
+min              -0.377584            -0.534481     -0.430899   
+25%              -0.377584            -0.534481     -0.430899   
+50%              -0.377584            -0.534481     -0.430899   
+75%              -0.080011             0.181228      0.001947   
+max              38.028093            26.304587     27.275275   
 
        preferential_attachment  
 count             91584.000000  
-mean                 -0.002455  
-std                   0.994869  
-min                  -0.544173  
-25%                  -0.505243  
-50%                  -0.372994  
-75%                   0.074132  
-max                  36.207211  
+mean                 -0.008069  
+std                   0.968068  
+min                  -0.541984  
+25%                  -0.503311  
+50%                  -0.371937  
+75%                   0.078491  
+max                  33.203650  
 #+end_example
 ** Feature Selection
    To reduce the dimensionality I'm going to use recursive feature selection and model-based selection.
@@ -463,7 +471,7 @@ def unpickle_it(name):
 #+END_SRC
 
 *** RFECV with Logistic Regression
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref lr-rfs
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref lr-rfs
 if os.path.isfile(Training.x_train_lr_rfs):
     x_train_lr_rfs = unpickle_it(Training.x_train_lr_rfs)
     x_test_lr_rfs = unpickle_it(Training.x_test_lr_rfs)
@@ -476,20 +484,16 @@ else:
     x_test_lr_rfs = selector.transform(x_test)
     pickle_it(x_train_lr_rfs, Training.x_train_lr_rfs)
     pickle_it(x_test_lr_rfs, Training.x_test_lr_rfs)
-#+END_SRC
-
-#+BEGIN_SRC ipython :session futures :results output
-print(selector.ranking_)
+    print(selector.ranking_)
 #+END_SRC
 
 #+RESULTS:
-: [1 1 1 2]
 
 It looks like it only discarded preferential attachment.
 
 *** RFECV with Extra Trees
 
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref trees-rfs
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref trees-rfs
 if os.path.isfile(Training.x_train_trees_rfs):
     x_train_trees_rfs = unpickle_it(Training.x_train_trees_rfs)
     x_test_trees_rfs = unpickle_it(Training.x_test_trees_rfs)
@@ -500,18 +504,14 @@ else:
     x_test_trees_rfs = selector.transform(x_test)
     pickle_it(x_train_trees_rfs, Training.x_train_trees_rfs)
     pickle_it(x_test_trees_rfs, Training.x_test_trees_rfs)
-#+END_SRC
-
-#+BEGIN_SRC ipython :session futures :results output
-print(selector.ranking_)
+    print(selector.ranking_)
 #+END_SRC
 
 #+RESULTS:
-: [1 1 1 1]
 
 Strangely, the Extra Trees Classifier didn't remove any columns...
 *** Select Model Logistic Regression
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref lr-sfm
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref lr-sfm
 if os.path.isfile(Training.x_train_lr_sfm):
     x_train_lr_sfm = unpickle_it(Training.x_train_lr_sfm)
     x_test_lr_sfm = unpickle_it(Training.x_test_lr_sfm)
@@ -525,21 +525,22 @@ else:
     x_test_lr_sfm = selector.transform(x_test)
     pickle_it(x_train_lr_sfm, Training.x_train_lr_sfm)
     pickle_it(x_test_lr_sfm, Training.x_test_lr_sfm)
+    print(estimator.coef_)
 #+END_SRC
+
+#+RESULTS:
 
 #+BEGIN_SRC ipython :session futures :results output
 print(x_train_lr_sfm.shape)
-print(estimator.coef_)
 #+END_SRC
 
 #+RESULTS:
 : (274750, 2)
-: [[ 0.42103148  0.666706    0.91835965  0.07331099]]
 
 This was more aggressive, cutting out half the features. It looks like it kept *Jaccard Coefficient* and *Adamic Adar* and got rid of *Resource Allocation* and *Preferential Attachment*.
 
 *** Select Model Extra Trees
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref trees-fsm
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref trees-fsm
 if os.path.isfile(Training.x_train_trees_sfm):
     x_train_trees_sfm = unpickle_it(Training.x_train_trees_sfm)
     x_test_trees_sfm = unpickle_it(Training.x_test_trees_sfm)
@@ -551,15 +552,17 @@ else:
     x_test_trees_sfm = selector.transform(x_test)
     pickle_it(x_train_trees_sfm, Training.x_train_trees_sfm)
     pickle_it(x_test_trees_sfm, Training.x_test_trees_sfm)
+    print(estimator.feature_importances_)
 #+END_SRC
 
+#+RESULTS:
+
 #+BEGIN_SRC ipython :session futures :results output
-print(estimator.feature_importances_)
+
 print(x_train_trees_sfm.shape)
 #+END_SRC
 
 #+RESULTS:
-: [ 0.27220102  0.25318735  0.26470865  0.20990298]
 : (274750, 3)
 
 This is sometimes more aggressive, keeping only the *Adamic Adar* feature... But maybe that's all you need, we'll see. Then again, other times it isn't as aggressive, only trimming two columns, and this tiem it only trimmed one...
@@ -660,17 +663,17 @@ fit_and_print_all(logistic_model, "Logistic Regression")
 
 #+RESULTS:
 #+begin_example
-Training Shape: (274750, 3)
-Logistic Regression,extra trees,select from model: 0.958
-
 Training Shape: (274750, 2)
 Logistic Regression,logistic regression,select from model: 0.920
 
-Training Shape: (274750, 4)
-Logistic Regression,extra trees,recursive feature selection: 0.920
+Training Shape: (274750, 3)
+Logistic Regression,extra trees,select from model: 0.958
 
 Training Shape: (274750, 3)
 Logistic Regression,logistic regression,recursive feature selection: 0.920
+
+Training Shape: (274750, 4)
+Logistic Regression,extra trees,recursive feature selection: 0.920
 
 Best Model So Far: Logistic Regression,extra trees,select from model, Score=0.96
 #+end_example
@@ -741,19 +744,31 @@ fit_grid_searches(forest, parameters, "Random Forest")
 #+END_SRC
 
 #+RESULTS:
-: Random Forest,extra trees,select from model: 0.96
-: 
 : Random Forest,logistic regression,select from model: 0.91
 : 
-: Random Forest,extra trees,recursive feature selection: 0.92
+: Random Forest,extra trees,select from model: 0.96
 : 
 : Random Forest,logistic regression,recursive feature selection: 0.92
+: 
+: Random Forest,extra trees,recursive feature selection: 0.92
 : 
 : Best Model So Far: Logistic Regression,extra trees,select from model, Score=0.96
 
 ** Extra Trees
-#+BEGIN_SRC ipython :session futures :results none :noweb-ref extra-trees
+#+BEGIN_SRC ipython :session futures :results output :noweb-ref extra-trees
+scores = {k:v for k,v in scores.items() if not k.startswith('Extra Trees,extra trees')}
 parameters = dict(n_estimators = list(range(10, 200, 10)))
 trees = ExtraTreesClassifier()
 fit_grid_searches(trees, parameters, "Extra Trees")
 #+END_SRC
+
+#+RESULTS:
+: Extra Trees,extra trees,recursive feature selection: 0.91
+: 
+: Extra Trees,logistic regression,recursive feature selection: 0.91
+: 
+: Extra Trees,logistic regression,select from model: 0.91
+: 
+: Extra Trees,extra trees,select from model: 0.91
+: 
+: Best Model So Far: Logistic Regression,extra trees,select from model, Score=0.96

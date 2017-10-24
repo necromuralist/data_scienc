@@ -20,6 +20,7 @@ from sklearn.ensemble import (
     )
 from sklearn.feature_selection import (
     RFECV,
+    SelectFromModel,
 )
 from sklearn.model_selection import (
     GridSearchCV,
@@ -82,6 +83,8 @@ def graph_identification():
                 graph_types.append("SW_H")
     return graph_types
 #+END_SRC
+
+This was marked wrong by the grader.
 
 * Part 2 - Company Emails
 
@@ -605,22 +608,271 @@ Using your trained classifier, return a series of length 122112 with the data be
          (75, 101)     0.65
          Length: 122112, dtype: float64
 #+END_EXAMPLE
-*** Missing Future Connections
-#+BEGIN_SRC ipython :session randomgraphs :results none
+*** Add Network Features
 
+#+BEGIN_SRC ipython :session randomgraphs :results none
+class Futures(object):
+    target = "Future Connection"
+    data_file = "Future_Connections.csv"
+    graph_file = "email_prediction.txt"
+    networkx_data_index = 2
+    folds = 10
 #+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results none
-def new_connections_predictions():
+class DataNames(object):
+    resource_allocation = 'resource_allocation'
+    jaccard = 'jaccard_coefficient'
+    adamic = "adamic_adar"
+    preferential = "preferential_attachment"
+#+END_SRC
+
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+def add_networkx_data(adder, name, graph=email, frame=future_connections):
+    """Adds networkx data to the frame
+
+    The networkx link-prediction functions return generators of triples:
+     (first-node, second-node, value)
+
+    This will use the index of the frame that's passed in as the source of 
+    node-pairs for the networkx function (called `ebunch` in the networkx
+    documentation) and the add only the value we want back to the frame
+
+    Args:
+     adder: networkx function to call to get the new data
+     name: column-name to add to the frame
+     graph: networkx graph to pass to the function
+     frame (pandas.DataFrame): frame with node-pairs as index to add data to
+    """
+    frame[name] = [output[Futures.networkx_data_index]
+                   for output in adder(graph, frame.index)]
+    return frame
+#+END_SRC
+
+**** Adding A Resource Allocation Index
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+add_networkx_data(networkx.resource_allocation_index,
+                  DataNames.resource_allocation)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation
+: (6, 840)                0.0             0.136721
+
+**** Adding the Jaccard Coefficient
+#+BEGIN_SRC ipython :session randomgraphs :results none
+add_networkx_data(networkx.jaccard_coefficient, DataNames.jaccard)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+**** Adamic Adar
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+add_networkx_data(networkx.adamic_adar_index, DataNames.adamic)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+**** Preferential Attachment
+#+BEGIN_SRC ipython :session randomgraphs :results none
+add_networkx_data(networkx.preferential_attachment, DataNames.preferential)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session futures :results output
+print(future_connections.head(1))
+#+END_SRC
+
+#+RESULTS:
+:           Future Connection  resource_allocation  jaccard_coefficient  \
+: (6, 840)                0.0             0.136721              0.07377   
+: 
+:           adamic_adar  preferential_attachment  
+: (6, 840)     2.110314                     2070  
+
+*** Setup the Training and Testing Data
+**** Separating the Edges Without 'Future Connection' Values
+   We are going to train on the values in the data with predictions and then make predictions for those that don't.
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+prediction_set = future_connections[future_connections[Futures.target].isnull()]
+training_set = future_connections[future_connections[Futures.target].notnull()]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(prediction_set.shape)
+print(training_set.shape)
+assert len(prediction_set) + len(training_set) == len(future_connections)
+#+END_SRC
+
+#+RESULTS:
+: (122112, 5)
+: (366334, 5)
+
+** Separate the Target and Training Sets
+#+BEGIN_SRC ipython :session randomgraphs :results none
+non_target = [column for column in future_connections.columns
+              if column != Futures.target]
+x_train = training_set[non_target]
+y_train = training_set[Futures.target]
+x_predict = prediction_set[non_target]
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+assert all(x_train.columns == x_predict.columns)
+assert len(x_train) == len(x_test)
+#+END_SRC
+
+** Scaling the Data
+   To enable the use of linear models I'm going to scale the data so the mean is 0 and the variance is 1.
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+scaler = StandardScaler()
+x_train_scaled = scaler.fit_transform(x_train)
+x_predict_scaled = scaler.transform(x_predict)
+
+x_train_frame = pandas.DataFrame(x_train_scaled, columns=x_train.columns)
+x_predict_frame = pandas.DataFrame(x_predict_scaled, columns=x_predict.columns)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(training.describe())
+print(predictions.describe())
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       resource_allocation  jaccard_coefficient   adamic_adar  \
+count         3.663340e+05         3.663340e+05  3.663340e+05   
+mean          2.362437e-17        -3.142158e-17  8.495464e-17   
+std           1.000001e+00         1.000001e+00  1.000001e+00   
+min          -3.787678e-01        -5.337500e-01 -4.313258e-01   
+25%          -3.787678e-01        -5.337500e-01 -4.313258e-01   
+50%          -3.787678e-01        -5.337500e-01 -4.313258e-01   
+75%          -7.683777e-02         1.913300e-01  4.738833e-03   
+max           6.213447e+01         2.629421e+01  4.468491e+01   
+
+       preferential_attachment  
+count             3.663340e+05  
+mean              1.474099e-18  
+std               1.000001e+00  
+min              -5.442567e-01  
+25%              -5.047032e-01  
+50%              -3.711384e-01  
+75%               7.713473e-02  
+max               4.281843e+01  
+       resource_allocation  jaccard_coefficient    adamic_adar  \
+count        122112.000000        122112.000000  122112.000000   
+mean              0.003738             0.004927       0.002951   
+std               0.999686             1.013047       0.996963   
+min              -0.378768            -0.533750      -0.431326   
+25%              -0.378768            -0.533750      -0.431326   
+50%              -0.378768            -0.533750      -0.431326   
+75%              -0.070988             0.191330       0.007442   
+max              43.017859            26.294210      32.196724   
+
+       preferential_attachment  
+count            122112.000000  
+mean                  0.002366  
+std                   1.008316  
+min                  -0.544257  
+25%                  -0.504703  
+50%                  -0.372858  
+75%                   0.074269  
+max                  35.259698  
+#+end_example
+** Feature Selection
+   To reduce the dimensionality I'm going to use model-based selection with Extra Trees.
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+estimator = ExtraTreesClassifier()
+estimator.fit(x_train_scaled, y_train)
+selector = SelectFromModel(estimator, prefit=True)
+x_train_trees_sfm = selector.transform(x_train_scaled)
+x_predict_sfm = selector.transform(x_predict_scaled)
+print(estimator.feature_importances_)
+#+END_SRC
+
+#+RESULTS:
+: [ 0.18060856  0.21380636  0.42918547  0.17639961]
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(x_train_trees_sfm.shape)
+#+END_SRC
+
+#+RESULTS:
+: (366334, 1)
+
+*** Missing Future Connections
+#+BEGIN_SRC ipython :session randomgraphs :results none
+model = LogisticRegressionCV(n_jobs=-1, scoring='roc_auc', solver='liblinear',
+                             cv=StratifiedKFold())
+model.fit(x_train_trees_sfm, y_train)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+for scores in model.scores_[1.0]:
+    print(max(scores))
     
-    # Your Code Here
-    
-    return # Your Answer Here
+#+END_SRC
+
+#+RESULTS:
+: 0.90631555176
+: 0.90631556264
+: 0.901334007951
+: 0.901334019196
+: 0.910627481378
+: 0.910627490392
+
+#+BEGIN_SRC ipython :session randomgraphs :results output
+print(model.classes_)
+#+END_SRC
+
+#+RESULTS:
+: [ 0.  1.]
+
+#+BEGIN_SRC ipython :session randomgraphs :results none
+def new_connections_predictions():    
+    probabilities = model.predict_proba(x_predict_sfm)
+    return pandas.Series(probabilities[:, 1], index=prediction_set.index)
 #+END_SRC
 
 #+BEGIN_SRC ipython :session randomgraphs :results output
 outcome = new_connections_predictions()
-assert len(outcome) == 12112
+assert len(outcome) == 122112, len(outcome)
+print(outcome.head())
 #+END_SRC
+
+#+RESULTS:
+: (107, 348)    0.056738
+: (542, 751)    0.024142
+: (20, 426)     0.552866
+: (50, 989)     0.024142
+: (942, 986)    0.024142
+: dtype: float64
 
 
