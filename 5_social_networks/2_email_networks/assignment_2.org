@@ -28,6 +28,7 @@ Each node represents an employee and each directed edge between two nodes repres
 from collections import defaultdict
 
 # pypi
+import matplotlib
 import networkx
 import pandas
 import seaborn
@@ -37,8 +38,6 @@ import seaborn
 % matplotlib inline
 seaborn.set_style("whitegrid")
 #+END_SRC
-
-This line must be commented out when submitting to the autograder
 
 #+BEGIN_SRC ipython :session networkconnectivity :results output :noweb-ref data
 email_network = pandas.read_table('email_network.txt', dtype={"#Sender": str, "Recipient": str})
@@ -75,13 +74,27 @@ def answer_one():
     return graph
 #+END_SRC
 
-#+BEGIN_SRC ipython :session networkconnectivity :file /tmp/one.png
+#+BEGIN_SRC ipython :session networkconnectivity :ipyfile /tmp/one.png :exports both :results raw drawer
 one = answer_one()
 networkx.draw_networkx(one)
 #+END_SRC
 
 #+RESULTS:
+:RESULTS:
 [[file:/tmp/one.png]]
+:END:
+
+#+BEGIN_SRC ipython :session networkconnectivity :results output
+print(networkx.info(one))
+#+END_SRC
+
+#+RESULTS:
+: Name: 
+: Type: MultiDiGraph
+: Number of nodes: 167
+: Number of edges: 82927
+: Average in degree: 496.5689
+: Average out degree: 496.5689
 
 * 2 Number of employees and emails
 
@@ -272,7 +285,6 @@ print(answer_nine())
 #+RESULTS:
 : ['129', '134', '97']
 
-
 * Question 10
 
 What is the set of node(s) in G_sc with eccentricity equal to the radius?
@@ -355,16 +367,19 @@ Construct an undirected graph G_un using G_sc (you can ignore the attributes).
 #+BEGIN_SRC ipython :session networkconnectivity :results none
 def answer_thirteen():
     """undirected version of strongly connected graph"""
-    return strongly_connected.to_undirected()
+    return answer_six().to_undirected()
 #+END_SRC
 
-#+BEGIN_SRC ipython :session networkconnectivity :file /tmp/strongly_undirected.png
+#+BEGIN_SRC ipython :session networkconnectivity :ipyfile /tmp/strongly_undirected.png :exports both :results raw drawer
 graph = answer_thirteen()
+assert not graph.is_directed()
 networkx.draw(graph, with_labels=True)
 #+END_SRC
 
 #+RESULTS:
+:RESULTS:
 [[file:/tmp/strongly_undirected.png]]
+:END:
 
 * Question 14
 
@@ -386,17 +401,19 @@ print(answer_fourteen())
 #+RESULTS:
 : (0.570111160700385, 0.6975272437231419)
 * Grading
-** Function answer_one was answered correctly, 0.09 points were awarded. Student solution correct. 
-** Function answer_two was answered correctly, 0.07 points were awarded. Correct. Correct. 
-** Function answer_three was answered correctly, 0.07 points were awarded. Correct. Correct. 
-** Function answer_four was answered correctly, 0.07 points were awarded. Correct. 
-** Function answer_five was answered incorrectly, 0.07 points were not awarded.
-** Function answer_six was answered correctly, 0.07 points were awarded. Student solution correct.
-** Function answer_seven was answered incorrectly, 0.07 points were not awarded. 
-** Function answer_eight was answered incorrectly, 0.07 pointswere not awarded. 
-** Function answer_nine was answered incorrectly, 0.07 points were not awarded. 
-** Function answer_ten was answered incorrectly, 0.07 points were not awarded.
-** Function answer_eleven was answered incorrectly, 0.07 points were not awarded. 
-** Function answer_twelve was answered incorrectly, 0.07 points were not awarded. 
-** Function answer_thirteen was answered incorrectly, 0.07 points were not awarded. 
-** Function answer_fourteen was answered incorrectly, 0.07 points were not awarded.
+** Correct
+*** Function answer_one was answered correctly, 0.09 points were awarded. Student solution correct.
+*** Function answer_two was answered correctly, 0.07 points were awarded. Correct. Correct.
+*** Function answer_three was answered correctly, 0.07 points were awarded. Correct. Correct.
+*** Function answer_four was answered correctly, 0.07 points were awarded. Correct.
+*** Function answer_six was answered correctly, 0.07 points were awarded. Student solution correct.
+** Incorrect
+*** Function answer_five was answered incorrectly, 0.07 points were not awarded.
+*** Function answer_seven was answered incorrectly, 0.07 points were not awarded. 
+*** Function answer_eight was answered incorrectly, 0.07 pointswere not awarded. 
+*** Function answer_nine was answered incorrectly, 0.07 points were not awarded. 
+*** Function answer_ten was answered incorrectly, 0.07 points were not awarded.
+*** Function answer_eleven was answered incorrectly, 0.07 points were not awarded. 
+*** Function answer_twelve was answered incorrectly, 0.07 points were not awarded. 
+*** Function answer_thirteen was answered incorrectly, 0.07 points were not awarded. 
+*** Function answer_fourteen was answered incorrectly, 0.07 points were not awarded.

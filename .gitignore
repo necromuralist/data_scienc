@@ -92,3 +92,4 @@ ENV/
 .doit.db
 cache/
 output/
+obipy-resources/
