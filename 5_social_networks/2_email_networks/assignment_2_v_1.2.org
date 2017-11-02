@@ -6,6 +6,10 @@ Each node represents an employee and each directed edge between two nodes repres
 * Imports
 
 #+BEGIN_SRC ipython :session connectivity :results none
+# python standard library
+from collections import defaultdict
+
+# from pypi
 import networkx
 import pandas
 import seaborn
@@ -188,150 +192,212 @@ print(answer_five())
 : 126
 
 
-# ### Question 6
-# 
-# Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
-# Call this graph G_sc.
-# 
-# *This function should return a networkx MultiDiGraph named G_sc.*
+* 6 - Subgraph nodes of largest strongly connected component
+  Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
+  Call this graph G_sc.
 
-# In[ ]:
+  *This function should return a networkx MultiDiGraph named G_sc.*
 
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_six():
-        
-    # Your Code Here
+    """the sub-graph of the largest strongly connected component
     
-    return # Your Answer Here
+    Returns: 
+     networkx.MultiDiGraph: largest strongly connected component
+    """
+    one = answer_one()
+    return max(networkx.algorithms.strongly_connected_component_subgraphs(one),
+               key=len)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session connectivity :results none
+strongly_connected = answer_six()
+assert len(strongly_connected.nodes()) == answer_five()
+assert type(strongly_connected) is networkx.MultiDiGraph
+#+END_SRC
 
 
-# ### Question 7
-# 
-# What is the average distance between nodes in G_sc?
-# 
-# *This function should return a float.*
+* 7 - Average distance between nodes
+  What is the average distance between nodes in G_sc?
 
-# In[ ]:
+  *This function should return a float.*
 
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_seven():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """average distance between nodes"""
+    strongly_connected = answer_six()
+    return networkx.average_shortest_path_length(strongly_connected)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session connectivity :results output
+average_distance = answer_seven()
+print(average_distance)
+assert type(average_distance) is float
+#+END_SRC
 
-# ### Question 8
-# 
-# What is the largest possible distance between two employees in G_sc?
-# 
-# *This function should return an int.*
+#+RESULTS:
+: 1.6461587301587302
 
-# In[ ]:
+* 8 - Largest Possible Distance Between Two Employees
+  What is the largest possible distance between two employees in G_sc?
+  *This function should return an int.*
 
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_eight():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Largest possible distance between employees"""
+    strongly_connected = answer_six()
+    return networkx.diameter(strongly_connected)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session connectivity :results output
+largest_distance = answer_eight()
+print(largest_distance)
+assert type(largest_distance) is int
+#+END_SRC
+
+#+RESULTS:
+: 3
 
 
-# ### Question 9
-# 
-# What is the set of nodes in G_sc with eccentricity equal to the diameter?
-# 
-# *This function should return a set of the node(s).*
+* 9 - Nodes With Eccentricity Equal to the Diameter
+  What is the set of nodes in G_sc with eccentricity equal to the diameter?
 
-# In[ ]:
+  *This function should return a set of the node(s).*
 
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_nine():
-       
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Nodes with eccentricity equal to diameter"""
+    strongly_connected = answer_six()
+    return set(networkx.periphery(strongly_connected))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session connectivity :results output
+nodes = answer_nine()
+print(nodes)
+assert type(nodes) is set
+#+END_SRC
+
+#+RESULTS:
+: {'134', '97', '129'}
 
 
-# ### Question 10
-# 
-# What is the set of node(s) in G_sc with eccentricity equal to the radius?
-# 
-# *This function should return a set of the node(s).*
+* 10 - Eccentricity Equal to the Radius
+  What is the set of node(s) in G_sc with eccentricity equal to the radius?
 
-# In[ ]:
+  *This function should return a set of the node(s).*
 
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_ten():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Nodes with eccentricity equal to the radius"""
+    strongly_connected = answer_six()
+    return set(networkx.center(strongly_connected))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session connectivity :results output
+radius_eccentricity = answer_ten()
+print(radius_eccentricity)
+assert type(radius_eccentricity) is set
+#+END_SRC
+
+#+RESULTS:
+: {'38'}
 
 
-# ### Question 11
-# 
-# Which node in G_sc is connected to the most other nodes by a shortest path of length equal to the diameter of G_sc?
-# 
-# How many nodes are connected to this node?
-# 
-# 
-# *This function should return a tuple (name of node, number of satisfied connected nodes).*
+* 11 - Connected to Most Nodes with Diameter
+  Which node in G_sc is connected to the most other nodes by a shortest path of length equal to the diameter of G_sc?
 
-# In[ ]:
+  How many nodes are connected to this node?
 
+ *This function should return a tuple (name of node, number of satisfied connected nodes).*
 
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_eleven():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """node with most shortest paths to other peripheral nodes"""
+    candidates = networkx.periphery(strongly_connected)
+    outcomes = defaultdict(int)
+    for candidate_1 in candidates:
+        for candidate_2 in candidates:
+            if (candidate_1 != candidate_2
+                and networkx.has_path(strongly_connected,
+                                      candidate_1,
+                                      candidate_2)):
+                outcomes[candidate_1] += len(list(networkx.all_shortest_paths(strongly_connected,
+                                                                              candidate_1,
+                                                                              candidate_2)))
+    node = max(outcomes, key=lambda key: outcomes[key])
+    return node, outcomes[node]
+#+END_SRC
 
+#+BEGIN_SRC ipython :session connectivity :results output
+name,  number = answer_eleven()
+print(name, number)
+assert type(name) is str
+assert type(number) is int
+#+END_SRC
 
-# ### Question 12
-# 
-# Suppose you want to prevent communication from flowing to the node that you found in the previous question from any node in the center of G_sc, what is the smallest number of nodes you would need to remove from the graph (you're not allowed to remove the node from the previous question or the center nodes)? 
-# 
-# *This function should return an integer.*
+#+RESULTS:
+: 129 15
 
-# In[ ]:
+* 12 - Prevent Communication to Most Connected
 
+  Suppose you want to prevent communication from flowing to the node that you found in the previous question from any node in the center of G_sc, what is the smallest number of nodes you would need to remove from the graph (you're not allowed to remove the node from the previous question or the center nodes)? 
 
+ *This function should return an integer.*
+
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_twelve():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Smallest number of nodes to remove node from graph"""
+    node, count = answer_eleven()    
+    center = networkx.center(strongly_connected)
+    remove = [networkx.node_connectivity(strongly_connected, node, other) for other in center]
+    return max(remove)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session connectivity :results output
+print(answer_twelve())
+#+END_SRC
 
-# ### Question 13
-# 
-# Construct an undirected graph G_un using G_sc (you can ignore the attributes).
-# 
-# *This function should return a networkx Graph.*
+#+RESULTS:
+: 5
 
-# In[ ]:
+* 13 - Undirected Strongly Connected Graph
 
+Construct an undirected graph G_un using G_sc (you can ignore the attributes).
 
+ *This function should return a networkx Graph.*
+
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_thirteen():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """undirected version of strongly connected graph"""
+    return answer_six().to_undirected()
+#+END_SRC
 
+#+BEGIN_SRC ipython :session connectivity :ipyfile /tmp/strongly_undirected.png :exports both :results raw drawer
+graph = answer_thirteen()
+assert not graph.is_directed()
+networkx.draw(graph, with_labels=True)
+#+END_SRC
 
-# ### Question 14
-# 
-# What is the transitivity and average clustering coefficient of graph G_un?
-# 
-# *This function should return a tuple (transitivity, avg clustering).*
+#+RESULTS:
+:RESULTS:
+[[file:/tmp/strongly_undirected.png]]
+:END:
 
-# In[ ]:
+* 14 - Transitivity and Average Clustering Coefficient
+  What is the transitivity and average clustering coefficient of graph G_un?
 
+  *This function should return a tuple (transitivity, avg clustering).*
 
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_fourteen():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    graph = answer_thirteen()
+    graph = networkx.Graph(graph)
+    return networkx.transitivity(graph), networkx.average_clustering(graph)
+#+END_SRC
 
+#+BEGIN_SRC ipython :session connectivity :results output
+print(answer_fourteen())
+#+END_SRC
+
+#+RESULTS:
+: (0.570111160700385, 0.6975272437231418)
