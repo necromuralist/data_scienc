@@ -59,6 +59,7 @@ def answer_one():
     Returns:
      networkx.MultiDiGraph: the graph of the email network
     """
+    email_network = pandas.read_table('email_network.txt', dtype={"#Sender": str, "Recipient": str})
     # according to the notes online, the grade doesn't work with data
     # defined outside of the function
     pandas.read_table('email_network.txt', dtype={"#Sender": str, "Recipient": str})
@@ -98,7 +99,7 @@ def answer_two():
      tuple: count of employees, count of emails
     """
     one = answer_one()
-    return (one.order(), one.size())        
+    return (one.order(), one.size())
 #+END_SRC
 
 Each node in the graph is an employee and each edge is an email sent from one employee to another.
@@ -146,30 +147,45 @@ print(answer_three())
   How many nodes are in the largest (in terms of nodes) weakly connected component?
   *This function should return an int.*
 
-# In[ ]:
-
-
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_four():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """Count of nodes in the largest weakly connected component"""
+    one = answer_one()
+    return len(max(networkx.weakly_connected_component_subgraphs(one), key=len).nodes())
+#+END_SRC
 
+According to [[https://en.wikipedia.org/wiki/Connectivity_%28graph_theory%29#Definitions_of_components.2C_cuts_and_connectivity][Wikipedia]], a directed graph is weakly connected if replacing every directed edge with an undirected one creates a connected graph, so if the undirected graph in the next section is a connected graph, then the entire email graph is weakly connected.
 
-# ### Question 5
-# 
-# How many nodes are in the largest (in terms of nodes) strongly connected component?
-# 
-# *This function should return an int*
+#+BEGIN_SRC ipython :session connectivity :results output
+print(answer_four())
+undirected = one.to_undirected()
+print(networkx.is_connected(undirected))
+#+END_SRC
 
-# In[ ]:
+#+RESULTS:
+: 167
+: True
 
+* 5 - Nodes in Largest Strongly Connected Component
+How many nodes are in the largest (in terms of nodes) strongly connected component?
 
+*This function should return an int*
+#+BEGIN_SRC ipython :session connectivity :results none
 def answer_five():
-        
-    # Your Code Here
-    
-    return # Your Answer Here
+    """size of largest strongly connected component
+
+    Returns:
+     int: number of nodes in largest strongly connected component
+    """
+    return len(max(networkx.strongly_connected_components(one), key=len))
+#+END_SRC
+
+#+BEGIN_SRC ipython :session connectivity :results output
+print(answer_five())
+#+END_SRC
+
+#+RESULTS:
+: 126
 
 
 # ### Question 6
