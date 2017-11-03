@@ -191,7 +191,6 @@ print(answer_five())
 #+RESULTS:
 : 126
 
-
 * 6 - Subgraph nodes of largest strongly connected component
   Using the NetworkX function strongly_connected_component_subgraphs, find the subgraph of nodes in a largest strongly connected component. 
   Call this graph G_sc.
@@ -215,7 +214,6 @@ strongly_connected = answer_six()
 assert len(strongly_connected.nodes()) == answer_five()
 assert type(strongly_connected) is networkx.MultiDiGraph
 #+END_SRC
-
 
 * 7 - Average distance between nodes
   What is the average distance between nodes in G_sc?
@@ -258,7 +256,6 @@ assert type(largest_distance) is int
 #+RESULTS:
 : 3
 
-
 * 9 - Nodes With Eccentricity Equal to the Diameter
   What is the set of nodes in G_sc with eccentricity equal to the diameter?
 
@@ -278,8 +275,7 @@ assert type(nodes) is set
 #+END_SRC
 
 #+RESULTS:
-: {'134', '97', '129'}
-
+: {'97', '129', '134'}
 
 * 10 - Eccentricity Equal to the Radius
   What is the set of node(s) in G_sc with eccentricity equal to the radius?
@@ -302,7 +298,6 @@ assert type(radius_eccentricity) is set
 #+RESULTS:
 : {'38'}
 
-
 * 11 - Connected to Most Nodes with Diameter
   Which node in G_sc is connected to the most other nodes by a shortest path of length equal to the diameter of G_sc?
 
@@ -313,6 +308,7 @@ assert type(radius_eccentricity) is set
 #+BEGIN_SRC ipython :session connectivity :results none
 def answer_eleven():
     """node with most shortest paths to other peripheral nodes"""
+    strongly_connected = answer_six()
     candidates = networkx.periphery(strongly_connected)
     outcomes = defaultdict(int)
     for candidate_1 in candidates:
