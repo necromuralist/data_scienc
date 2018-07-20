@@ -1042,7 +1042,6 @@ get_ipython().run_cell_magic('HTML', '', '<svg width="800" height="300">\n  <cir
    | Australia          | 23,316,017.316017315  |
    | Brazil             | 205,915,254.23728815  |
 
-
 ** Optional
 
    Use the built in function =plot_optional()= to see an example visualization.

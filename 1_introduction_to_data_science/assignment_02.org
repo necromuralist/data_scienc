@@ -245,7 +245,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
 #+end_example
 
 * Question 0 (Example)
-
 ** What is the first country in in the data-frame?
 
    The autograder will call this function and compare the return value against the correct solution value.
@@ -310,7 +309,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
    #+RESULTS:
    : United States
 
-
 ** Question 3
    Which country has the biggest difference between their summer gold medal counts and winter gold medal counts relative to their total gold medal count? 
 
@@ -339,7 +337,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
 
    #+RESULTS:
    : Bulgaria
-
 
 ** Question 4
    Write a function that creates a Series called "Points" which is a weighted value where each gold medal (`Gold.2`) counts for 3 points, silver medals (`Silver.2`) for 2 points, and bronze medals (`Bronze.2`) for 1 point. The function should return only the column (a Series object) which you created.
@@ -449,7 +446,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
    #+END_SRC
 
 ** Question 5
-
    Which state has the most counties in it? (hint: consider the sumlevel key carefully! You'll need this for future questions too...)
 
 
@@ -495,7 +491,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
    #+RESULTS:
    | California | Texas | Illinois |
 
-
 ** Question 7
    Which county has had the largest absolute change in population within the period 2010-2015? (Hint: population values are stored in columns =POPESTIMATE2010= through =POPESTIMATE2015=, you need to consider all six columns.)
 
@@ -524,7 +519,6 @@ This is the notebook for assignment 2 of the Coursera /Python Data Analysis/ cou
 
    #+RESULTS:
    : Harris County
-
 
 ** Question 8
    In this datafile, the United States is broken up into four regions using the "REGION" column. 

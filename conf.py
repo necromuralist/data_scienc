@@ -17,17 +17,16 @@ import time
 
 
 # Data about this site
-BLOG_AUTHOR = "necromuralist"  # (translatable)
+BLOG_AUTHOR = "Cloistered Monkey"  # (translatable)
 BLOG_TITLE = "Data Science With Python"  # (translatable)
 # This is the main URL for your site. It will be used
 # in a prominent link. Don't forget the protocol (http/https)!
-SITE_URL = "https://necromuralist.github.io/data_science/"
+SITE_URL = "https://example.com/"
 # This is the URL where Nikola's output will be deployed.
 # If not set, defaults to SITE_URL
-# BASE_URL = "https://necromuralist.github.io/data_science/"
-BLOG_EMAIL = "necromuralist@gmail.com"
-BLOG_DESCRIPTION = ("Work done for the Coursera \"Data Science with "
-                    "Python\" Specialization.") # (translatable)
+# BASE_URL = "https://example.com/"
+BLOG_EMAIL = "necromuralist@protonmail.com"
+BLOG_DESCRIPTION = "Companion to the course-work done for the Coursera 'Data Science With Python' class"  # (translatable)
 
 # Nikola is multilingual!
 #
@@ -74,6 +73,7 @@ BLOG_DESCRIPTION = ("Work done for the Coursera \"Data Science with "
 # sr_latin  Serbian (Latin)
 # sv        Swedish
 # te        Telugu
+# th        Thai
 # tr        Turkish [NOT tr_TR]
 # uk        Ukrainian
 # ur        Urdu
@@ -135,8 +135,6 @@ TRANSLATIONS_PATTERN = "{path}.{lang}.{ext}"
 
 NAVIGATION_LINKS = {
     DEFAULT_LANG: (
-        ((("/pages/portland-unemployment-2007-to-2017",
-           "Portland Unemployment Visualization"),), "Projects"),
         ("/archive.html", "Archive"),
         ("/categories/", "Tags"),
         ("/rss.xml", "RSS feed"),
@@ -144,7 +142,7 @@ NAVIGATION_LINKS = {
 }
 
 # Name of the theme to use.
-THEME = "custom_theme"
+THEME = "bootstrap3"
 
 # Primary color of your theme. This will be used to customize your theme and
 # auto-generate related colors in POSTS_SECTION_COLORS. Must be a HEX value.
@@ -180,19 +178,21 @@ THEME_COLOR = '#5670d4'
 # Finally, note that destination can be translated, i.e. you can
 # specify a different translation folder per language. Example:
 #     PAGES = (
-#         ("pages/*.rst", {"en": "pages", "de": "seiten"}, "story.tmpl"),
-#         ("pages/*.md", {"en": "pages", "de": "seiten"}, "story.tmpl"),
+#         ("pages/*.rst", {"en": "pages", "de": "seiten"}, "page.tmpl"),
+#         ("pages/*.md", {"en": "pages", "de": "seiten"}, "page.tmpl"),
 #     )
 
 POSTS = (
     ("posts/*.rst", "posts", "post.tmpl"),
+    ("posts/*.md", "posts", "post.tmpl"),
     ("posts/*.txt", "posts", "post.tmpl"),
     ("posts/*.html", "posts", "post.tmpl"),
 )
 PAGES = (
-    ("pages/*.rst", "pages", "story.tmpl"),
-    ("pages/*.txt", "pages", "story.tmpl"),
-    ("pages/*.html", "pages", "story.tmpl"),
+    ("pages/*.rst", "pages", "page.tmpl"),
+    ("pages/*.md", "pages", "page.tmpl"),
+    ("pages/*.txt", "pages", "page.tmpl"),
+    ("pages/*.html", "pages", "page.tmpl"),
 )
 
 
@@ -261,7 +261,7 @@ TIMEZONE = "America/Los_Angeles"
 # compilers unless you write the interface for it yourself.
 #
 # 'rest' is reStructuredText
-# 'markdown' is MarkDown
+# 'markdown' is Markdown
 # 'html' assumes the file is HTML and just copies it
 COMPILERS = {
     "rest": ('.rst', '.txt'),
@@ -285,6 +285,13 @@ COMPILERS = {
 # Create by default posts in one file format?
 # Set to False for two-file posts, with separate metadata.
 # ONE_FILE_POSTS = True
+
+# Preferred metadata format for new posts
+# "Nikola": reST comments wrapped in a comment if needed (default)
+# "YAML": YAML wrapped in "---"
+# "TOML": TOML wrapped in "+++"
+# "Pelican": Native markdown metadata or reST docinfo fields. Nikola style for other formats.
+# METADATA_FORMAT = "Nikola"
 
 # Use date-based path when creating posts?
 # Can be enabled on a per-post basis with `nikola new_post -d`.
@@ -322,6 +329,12 @@ POSTS_SECTIONS = True
 # Setting this to False generates a list page instead of an index. Indexes
 # are the default and will apply GENERATE_ATOM if set.
 # POSTS_SECTIONS_ARE_INDEXES = True
+
+# Final locations are:
+# output / TRANSLATION[lang] / SECTION_PATH / SECTION_NAME / index.html (list of posts for a section)
+# output / TRANSLATION[lang] / SECTION_PATH / SECTION_NAME / rss.xml (RSS feed for a section)
+# (translatable)
+# SECTION_PATH = ""
 
 # Each post and section page will have an associated color that can be used
 # to style them with a recognizable color detail across your site. A color
@@ -365,6 +378,19 @@ POSTS_SECTIONS = True
 #         'how-to': 'How-to and Tutorials',
 #     },
 # }
+
+# A list of dictionaries specifying sections which translate to each other.
+# For example:
+#   [
+#     {'en': 'private', 'de': 'Privat'},
+#     {'en': 'work', 'fr': 'travail', 'de': 'Arbeit'},
+#   ]
+# POSTS_SECTION_TRANSLATIONS = []
+
+# If set to True, a section in a language will be treated as a translation
+# of the literally same section in all other languages. Enable this if you
+# do not translate sections, for example.
+# POSTS_SECTION_TRANSLATIONS_ADD_DEFAULTS = True
 
 # Paths for different autogenerated bits. These are combined with the
 # translation paths.
@@ -416,6 +442,16 @@ HIDDEN_TAGS = ['mathjax']
 # page is still generated, linked from posts, and included in the sitemap.
 # However, more obscure tags can be hidden from the tag index page.
 # TAGLIST_MINIMUM_POSTS = 1
+
+# A list of dictionaries specifying tags which translate to each other.
+# Format: a list of dicts {language: translation, language2: translation2, …}
+# See POSTS_SECTION_TRANSLATIONS example above.
+# TAG_TRANSLATIONS = []
+
+# If set to True, a tag in a language will be treated as a translation
+# of the literally same tag in all other languages. Enable this if you
+# do not translate tags, for example.
+# TAG_TRANSLATIONS_ADD_DEFAULTS = True
 
 # Final locations are:
 # output / TRANSLATION[lang] / CATEGORY_PATH / index.html (list of categories)
@@ -469,6 +505,16 @@ CATEGORY_OUTPUT_FLAT_HIERARCHY = False
 # The category will not be displayed on the category list page.
 # Category pages will still be generated.
 HIDDEN_CATEGORIES = []
+
+# A list of dictionaries specifying categories which translate to each other.
+# Format: a list of dicts {language: translation, language2: translation2, …}
+# See POSTS_SECTION_TRANSLATIONS example above.
+# CATEGORY_TRANSLATIONS = []
+
+# If set to True, a category in a language will be treated as a translation
+# of the literally same category in all other languages. Enable this if you
+# do not translate categories, for example.
+# CATEGORY_TRANSLATIONS_ADD_DEFAULTS = True
 
 # If ENABLE_AUTHOR_PAGES is set to True and there is more than one
 # author, author pages are generated.
@@ -594,8 +640,8 @@ REDIRECTIONS = []
 # For more details, read the manual:
 # https://getnikola.com/handbook.html#deploying-to-github
 # You will need to configure the deployment branch on GitHub.
-GITHUB_SOURCE_BRANCH = 'documentation'
-GITHUB_DEPLOY_BRANCH = 'gh-pages'
+GITHUB_SOURCE_BRANCH = 'src'
+GITHUB_DEPLOY_BRANCH = 'master'
 
 # The name of the remote where you wish to push to, using github_deploy.
 GITHUB_REMOTE_NAME = 'origin'
@@ -660,7 +706,17 @@ GITHUB_COMMIT_SOURCE = True
 # (defaults to 'tidy5').
 # HTML_TIDY_EXECUTABLE = 'tidy5'
 
+# List of XPath expressions which should be used for finding headers
+# ({hx} is replaced by headers h1 through h6).
+# You must change this if you use a custom theme that does not use
+# "e-content entry-content" as a class for post and page contents.
+# HEADER_PERMALINKS_XPATH_LIST = ['*//div[@class="e-content entry-content"]//{hx}']
+# Include *every* header (not recommended):
+# HEADER_PERMALINKS_XPATH_LIST = ['*//{hx}']
 
+# File blacklist for header permalinks. Contains output path
+# (eg. 'output/index.html')
+# HEADER_PERMALINKS_FILE_BLACKLIST = []
 
 # Expert setting! Create a gzipped copy of each generated file. Cheap server-
 # side optimization for very high traffic sites or low memory servers.
@@ -827,44 +883,12 @@ IMAGE_FOLDERS = {'images': 'images'}
 # Color scheme to be used for code blocks. If your theme provides
 # "assets/css/code.css" this is ignored. Leave empty to disable.
 # Can be any of:
-# algol
-# algol_nu
-# arduino
-# autumn
-# borland
-# bw
-# colorful
-# default
-# emacs
-# friendly
-# fruity
-# igor
-# lovelace
-# manni
-# monokai
-# murphy
-# native
-# paraiso_dark
-# paraiso_light
-# pastie
-# perldoc
-# rrt
-# tango
-# trac
-# vim
-# vs
-# xcode
+# algol, algol_nu, autumn, borland, bw, colorful, default, emacs, friendly,
+# fruity, igor, lovelace, manni, monokai, murphy, native, paraiso-dark,
+# paraiso-light, pastie, perldoc, rrt, tango, trac, vim, vs, xcode
 # This list MAY be incomplete since pygments adds styles every now and then.
+# Check with list(pygments.styles.get_all_styles()) in an interpreter.
 # CODE_COLOR_SCHEME = 'default'
-
-# If you use 'site-reveal' theme you can select several subthemes
-# THEME_REVEAL_CONFIG_SUBTHEME = 'sky'
-# You can also use: beige/serif/simple/night/default
-
-# Again, if you use 'site-reveal' theme you can select several transitions
-# between the slides
-# THEME_REVEAL_CONFIG_TRANSITION = 'cube'
-# You can also use: page/concave/linear/none/default
 
 # FAVICONS contains (name, file, size) tuples.
 # Used to create favicon link like this:
@@ -886,6 +910,7 @@ IMAGE_FOLDERS = {'images': 'images'}
 # {min_remaining_read}          The string “{remaining_reading_time} min remaining to read” in the current language.
 # {paragraph_count}             The amount of paragraphs in the post.
 # {remaining_paragraph_count}   The amount of paragraphs in the post, sans the teaser.
+# {post_title}                  The title of the post.
 # {{                            A literal { (U+007B LEFT CURLY BRACKET)
 # }}                            A literal } (U+007D RIGHT CURLY BRACKET)
 
@@ -909,11 +934,11 @@ FEED_LINKS_APPEND_QUERY = False
 LICENSE = ""
 # I recommend using the Creative Commons' wizard:
 # https://creativecommons.org/choose/
-LICENSE = """
-<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
-<img alt="Creative Commons License BY-NC-SA"
-style="border-width:0; margin-bottom:12px;"
-src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>"""
+# LICENSE = """
+# <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+# <img alt="Creative Commons License BY-NC-SA"
+# style="border-width:0; margin-bottom:12px;"
+# src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png"></a>"""
 
 # A small copyright notice for the page footer (in HTML).
 # (translatable)
@@ -926,6 +951,8 @@ CONTENT_FOOTER = 'Contents &copy; {date}         <a href="mailto:{email}">{autho
 # tuples of tuples of positional arguments and dicts of keyword arguments
 # to format().  For example, {'en': (('Hello'), {'target': 'World'})}
 # results in CONTENT_FOOTER['en'].format('Hello', target='World').
+# If you need to use the literal braces '{' and '}' in your footer text, use
+# '{{' and '}}' to escape them (str.format is used)
 # WARNING: If you do not use multiple languages with CONTENT_FOOTER, this
 #          still needs to be a dict of this format.  (it can be empty if you
 #          do not need formatting)
@@ -958,13 +985,6 @@ COMMENT_SYSTEM = ""
 # "nikolademo" which is a test account for Disqus. More information
 # is in the manual.
 COMMENT_SYSTEM_ID = ""
-
-# Enable annotations using annotateit.org?
-# If set to False, you can still enable them for individual posts and pages
-# setting the "annotations" metadata.
-# If set to True, you can disable them for individual posts and pages using
-# the "noannotations" metadata.
-# ANNOTATIONS = False
 
 # Create index.html for page folders?
 # WARNING: if a page would conflict with the index file (usually
@@ -1029,32 +1049,30 @@ PRETTY_URLS = True
 # Do you want a add a Mathjax config file?
 # MATHJAX_CONFIG = ""
 
-# If you are using the compile-ipynb plugin, just add this one:
-MATHJAX_CONFIG = """
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-    tex2jax: {
-        inlineMath: [ ['$','$'], ["\\\(","\\\)"] ],
-        displayMath: [ ['$$','$$'], ["\\\[","\\\]"] ],
-        processEscapes: true
-    },
-    displayAlign: 'left', // Change this to 'center' to center equations.
-    "HTML-CSS": {
-        styles: {'.MathJax_Display': {"margin": 0}}
-    }
-});
-</script>
-"""
+# If you want support for the $.$ syntax (which may conflict with running
+# text!), just use this config:
+# MATHJAX_CONFIG = """
+# <script type="text/x-mathjax-config">
+# MathJax.Hub.Config({
+#     tex2jax: {
+#         inlineMath: [ ['$','$'], ["\\\(","\\\)"] ],
+#         displayMath: [ ['$$','$$'], ["\\\[","\\\]"] ],
+#         processEscapes: true
+#     },
+#     displayAlign: 'center', // Change this to 'left' if you want left-aligned equations.
+#     "HTML-CSS": {
+#         styles: {'.MathJax_Display': {"margin": 0}}
+#     }
+# });
+# </script>
+# """
 
-# Want to use KaTeX instead of MathJax? While KaTeX is less featureful,
-# it's faster and the output looks better.
-# If you set USE_KATEX to True, you also need to add an extra CSS file
-# like this:
-# EXTRA_HEAD_DATA = """<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.6.0/katex.min.css">"""
-# USE_KATEX = True
+# Want to use KaTeX instead of MathJax? While KaTeX may not support every
+# feature yet, it's faster and the output looks better.
+# USE_KATEX = False
 
-# If you want to use the old (buggy) inline math $.$ with KaTeX, then
-# you might want to use this feature.
+# KaTeX auto-render settings. If you want support for the $.$ syntax (wihch may
+# conflict with running text!), just use this config:
 # KATEX_AUTO_RENDER = """
 # delimiters: [
 #     {left: "$$", right: "$$", display: true},
@@ -1076,9 +1094,9 @@ MathJax.Hub.Config({
 # Note: most Nikola-specific extensions are done via the Nikola plugin system,
 #       with the MarkdownExtension class and should not be added here.
 # The default is ['fenced_code', 'codehilite']
-MARKDOWN_EXTENSIONS = ['fenced_code', 'codehilite', 'extra']
+MARKDOWN_EXTENSIONS = ['markdown.extensions.fenced_code', 'markdown.extensions.codehilite', 'markdown.extensions.extra']
 
-# Extra options to pass to the pandoc comand.
+# Extra options to pass to the pandoc command.
 # by default, it's empty, is a list of strings, for example
 # ['-F', 'pandoc-citeproc', '--bibliography=/Users/foo/references.bib']
 # Pandoc does not demote headers by default.  To enable this, you can use, for example
@@ -1127,11 +1145,11 @@ MARKDOWN_EXTENSIONS = ['fenced_code', 'codehilite', 'extra']
 # between each other. Old Atom feeds with no changes are marked as archived.
 # GENERATE_ATOM = False
 
-# Only inlclude teasers in Atom and RSS feeds. Disabling include the full
+# Only include teasers in Atom and RSS feeds. Disabling include the full
 # content. Defaults to True.
 # FEED_TEASERS = True
 
-# Strip HTML from Atom annd RSS feed summaries and content. Defaults to False.
+# Strip HTML from Atom and RSS feed summaries and content. Defaults to False.
 # FEED_PLAIN = False
 
 # Number of posts in Atom and RSS feeds.
@@ -1174,20 +1192,19 @@ MARKDOWN_EXTENSIONS = ['fenced_code', 'codehilite', 'extra']
 # """ % SITE_URL
 #
 # If you prefer a Google search form, here's an example that should just work:
-SEARCH_FORM = """
-<!-- Google custom search -->
-<form method="get" action="https://www.google.com/search" class="navbar-form
- navbar-right" role="search">
-<div class="form-group">
-<input type="text" name="q" class="form-control" placeholder="Search">
-</div>
-<button type="submit" class="btn btn-primary">
-<span class="glyphicon glyphicon-search"></span>
-</button>
-<input type="hidden" name="sitesearch" value="%s">
-</form>
-<!-- End of custom search -->
-""" % SITE_URL
+# SEARCH_FORM = """
+# <!-- Google custom search -->
+# <form method="get" action="https://www.google.com/search" class="navbar-form navbar-right" role="search">
+# <div class="form-group">
+# <input type="text" name="q" class="form-control" placeholder="Search">
+# </div>
+# <button type="submit" class="btn btn-primary">
+# 	<span class="glyphicon glyphicon-search"></span>
+# </button>
+# <input type="hidden" name="sitesearch" value="%s">
+# </form>
+# <!-- End of custom search -->
+# """ % SITE_URL
 
 # Use content distribution networks for jQuery, twitter-bootstrap css and js,
 # and html5shiv (for older versions of Internet Explorer)
@@ -1206,7 +1223,7 @@ SEARCH_FORM = """
 # Extra things you want in the pages HEAD tag. This will be added right
 # before </head>
 # (translatable)
-EXTRA_HEAD_DATA = '<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js"></script>'
+# EXTRA_HEAD_DATA = ""
 # Google Analytics or whatever else you use. Added to the bottom of <body>
 # in the default template (base.tmpl).
 # (translatable)
@@ -1227,6 +1244,23 @@ EXTRA_HEAD_DATA = '<script type="text/javascript" async src="https://cdnjs.cloud
 # '.*\/(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>.*)-(?P<title>.*)\.rst'
 # (Note the '.*\/' in the beginning -- matches source paths relative to conf.py)
 # FILE_METADATA_REGEXP = None
+
+# If enabled, extract metadata from docinfo fields in reST documents
+# USE_REST_DOCINFO_METADATA = False
+
+# If enabled, hide docinfo fields in reST document output
+# HIDE_REST_DOCINFO = False
+
+# Map metadata from other formats to Nikola names.
+# Supported formats: yaml, toml, rest_docinfo, markdown_metadata
+# METADATA_MAPPING = {}
+#
+# Example for Pelican compatibility:
+# METADATA_MAPPING = {
+#     "rest_docinfo": {"summary": "description", "modified": "updated"},
+#     "markdown_metadata": {"summary": "description", "modified": "updated"}
+# }
+# Other examples: https://getnikola.com/handbook.html#mapping-metadata-from-other-formats
 
 # If you hate "Filenames with Capital Letters and Spaces.md", you should
 # set this to true.
@@ -1265,7 +1299,7 @@ UNSLUGIFY_TITLES = True
 # USE_BUNDLES = True
 
 # Plugins you don't want to use. Be careful :-)
-DISABLED_PLUGINS = ["render_galleries", "robots"]
+# DISABLED_PLUGINS = ["render_galleries"]
 
 # Special settings to disable only parts of the indexes plugin (to allow RSS
 # but no blog indexes, or to allow blog indexes and Atom but no site-wide RSS).
@@ -1325,12 +1359,3 @@ GLOBAL_CONTEXT = {}
 # GLOBAL_CONTEXT as parameter when the template is about to be
 # rendered
 GLOBAL_CONTEXT_FILLER = []
-
-# org-mode
-COMPILERS["orgmode"] = (".org",)
-POSTS = POSTS + (("posts/*.org", "posts", "post.tmpl"),)
-PAGES = PAGES + (("stories/*.org", "stories", "story.tmpl"),)
-
-# jupyter
-POSTS = POSTS + (("posts/*.ipynb", "posts", "post.tmpl"),)
-PAGES = PAGES + (("stories/*.ipynb", "stories", "story.tmpl"),)
